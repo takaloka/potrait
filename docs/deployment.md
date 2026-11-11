@@ -1,12 +1,14 @@
 # Deployment Loka Portrait
 
+Produksi aktif memakai VPS native Node + SQLite di https://potrait.takaloka.in. Lihat [runbook VPS](deployment-vps.md) untuk konfigurasi aktual, operasi, dan rollback. Cloudflare di bawah merupakan target alternatif.
+
 ## Local
 
 Node 22.13+ diperlukan. Jalankan `npm ci`, `npm test`, `npm run build`, lalu `npm start`. Server ada di `http://127.0.0.1:8787`. Start menjalankan semua migrasi yang belum ada, backend gambar loopback, dan tick antrean setiap dua detik. Hentikan server sebelum build/migrasi. Migrasi upgrade menyimpan backup privat di `.wrangler/backups`; jangan bagikan folder ini.
 
 Buat akun melalui `/operator` pada localhost. Login operator di perangkat yang membuka `/layar`; cookie berlaku delapan jam. Untuk tautan peserta lama tanpa fragment akses, operator memilih **Salin tautan** pada baris peserta. Foto yang sudah tersimpan tidak digenerasi ulang untuk unduh atau slideshow.
 
-## Production / staging
+## Cloudflare Workers / staging (alternatif)
 
 1. Buat D1 dan R2 baru di akun Cloudflare. Isi `database_id`, `database_name`, dan `bucket_name` di `wrangler.production.jsonc`. Jangan upload DB/OAuth lokal.
 2. Deploy `server/codex-image-backend.mjs` beserta package dependencies pada host Node dengan TLS reverse proxy. Bind Node ke loopback di belakang proxy; atur `CODEX_BACKEND_KEY` acak minimal 32 karakter melalui secret manager. Service harus restart otomatis dan mempunyai batas body/timeout upstream yang sesuai (edit maksimal 180 detik). Endpoint normalisasi juga diperlukan untuk mode BFL/demo.
