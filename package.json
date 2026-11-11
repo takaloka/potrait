@@ -12,6 +12,8 @@
     "dev": "node scripts/run-framework.mjs dev",
     "build": "node scripts/run-framework.mjs build",
     "prebuild": "node scripts/externalize-kolase.mjs",
+    "build:vps": "node scripts/externalize-kolase.mjs && node scripts/build-vps.mjs",
+    "start:vps": "node scripts/start-vps.mjs",
     "start": "node scripts/start-local.mjs",
     "start:codex-backend": "node server/codex-image-backend.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",

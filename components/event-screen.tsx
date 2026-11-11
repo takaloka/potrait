@@ -72,7 +72,6 @@ export default function EventScreen() {
   }, []);
 
   useEffect(() => {
-    setJoinUrl(`${window.location.origin}/`);
     const sessionId = getSessionId();
     const loaded = new Set<string>();
     const loading = new Set<string>();
