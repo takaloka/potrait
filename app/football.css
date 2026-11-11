@@ -1,0 +1,44 @@
+/* The football treatment belongs to the poster, not the application controls. */
+.football-card{position:relative;isolation:isolate;container-type:inline-size;overflow:hidden;background:#d95522;color:#f7e6bf;border:5px solid #c84c21;outline:1px solid #9d4a27;outline-offset:-1px;border-radius:5px;box-shadow:inset 0 0 0 2px #f2ce7f,inset 0 0 0 6px #d55222,inset 0 0 0 7px #e9b75d}
+.football-card:after{content:'';position:absolute;inset:0;background-image:url('/textures/print-grain.svg');mix-blend-mode:multiply;pointer-events:none;z-index:8;opacity:.85}
+.football-card-top{position:absolute;top:3.7%;left:6%;right:6%;display:flex;justify-content:space-between;gap:8px;font-family:var(--font-condensed);font-size:1.65cqw;letter-spacing:1px;z-index:6}
+.football-card-heading{position:absolute;z-index:2;font-family:var(--font-display);text-align:center;line-height:.95}
+.football-card-heading>span{display:block;font-family:var(--font-condensed);font-size:3cqw;letter-spacing:3px;margin-bottom:6px}
+.football-card-heading>strong{display:block;color:#f5e7ca;font-size:15cqw;letter-spacing:-.8cqw;text-shadow:1px 1px #322c23,2px 2px #322c23,3px 3px #ba391a;-webkit-text-stroke:.4px #322c23}
+.football-card-heading>em{display:block;position:relative;z-index:3;font-family:Georgia,serif;font-style:italic;font-weight:700;color:#ead16b;letter-spacing:-.25cqw;font-size:7.3cqw;line-height:.9;transform:rotate(-6deg);text-shadow:2px 2px #294731;margin-top:-1cqw}
+.football-card-oval{position:absolute;border-radius:50%;background:#2a5039;box-shadow:0 0 0 3px #dba345,0 0 0 6px #2a5039,0 0 0 8px #e0a447,0 0 0 11px #2b533d;outline:2px dashed #e2ad55;outline-offset:12px;display:grid;place-items:center;overflow:hidden}
+.football-card-oval:before{content:'';position:absolute;inset:8%;border:1px solid #e3bf6a66;border-radius:50%}
+.football-card-oval>span{font-family:var(--font-display);font-size:39cqw;letter-spacing:-4cqw;color:#d3b35b30;transform:rotate(-9deg);line-height:1}
+.football-card-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 25%;filter:contrast(1.03) saturate(.94)}
+.football-card-player{position:absolute;z-index:3;object-fit:contain;filter:contrast(1.03) saturate(.94);object-position:center bottom}
+.football-card-side{position:absolute;font-family:var(--font-condensed);font-size:1.9cqw;letter-spacing:1.5px;writing-mode:vertical-rl;transform:rotate(180deg);opacity:.8;z-index:5}
+.football-card-name{position:absolute;z-index:5;background:#f1dfb3;color:#244b35;border:2px solid #223f2f;box-shadow:0 0 0 3px #da9c40,0 4px 0 3px #723a1f60;text-align:center;padding:2% 3% 3%;left:9%;right:9%;bottom:7.5%;transform:rotate(-2deg)}
+.football-card-name>span{display:block;font-family:var(--font-condensed);font-size:2.4cqw;letter-spacing:3px;margin-bottom:1%}
+.football-card-name>strong{display:block;font-family:var(--font-display);font-weight:700;font-size:10.5cqw;line-height:1;letter-spacing:-.5cqw;text-transform:uppercase;overflow-wrap:anywhere}
+.football-card-name>strong.long-name{font-size:6.1cqw;letter-spacing:-.15cqw}
+.football-card-bottom{position:absolute;z-index:6;bottom:2.5%;left:5%;right:5%;font-family:var(--font-condensed);font-size:1.7cqw;letter-spacing:.6px;text-align:center;line-height:1.3}
+.football-corner{position:absolute;z-index:7;width:5%;aspect-ratio:1;display:grid;place-items:center;background:#d95723;color:#f1c46c;font-size:3.9cqw;line-height:1}
+.football-corner-a{top:0;left:0}.football-corner-b{top:0;right:0}.football-corner-c{bottom:0;left:0}.football-corner-d{bottom:0;right:0}
+.football-card-portrait{aspect-ratio:4/5}
+.football-card-portrait .football-card-heading{top:8%;left:8%;right:8%}
+.football-card-portrait .football-card-oval{inset:27% 13% 13%}
+.football-card-portrait .football-card-player{top:24%;left:8%;width:84%;height:63%}
+.football-card-portrait .football-card-side{left:5.4%;top:44%}
+.football-card-portrait.has-full-photo .football-card-player{top:27%;left:14%;width:72%;height:58%;object-fit:cover;object-position:50% 24%;border-radius:50% 50% 16% 16%}
+.football-card-hero{aspect-ratio:1.43}
+.football-card-hero .football-card-top{top:4.5%;font-size:1.5cqw}
+.football-card-hero .football-card-heading{top:13%;left:5%;width:55%;text-align:left}
+.football-card-hero .football-card-heading>span{font-size:2.4cqw}
+.football-card-hero .football-card-heading>strong{font-size:10.2cqw;letter-spacing:-.65cqw}
+.football-card-hero .football-card-heading>em{font-size:5.7cqw;transform:rotate(-6deg);margin-left:3%;margin-top:.6cqw}
+.football-card-hero .football-card-oval{top:15%;left:46%;width:47%;height:78%;transform:rotate(8deg)}
+.football-card-hero .football-card-player{top:9%;right:-2%;width:65%;height:89%;object-position:center bottom}
+.football-card-hero .football-card-name{left:38%;right:7%;bottom:10%;padding:2% 2% 2.5%}
+.football-card-hero .football-card-name>span{font-size:1.5cqw;letter-spacing:2px}
+.football-card-hero .football-card-name>strong{font-size:7.5cqw}
+.football-card-hero .football-card-side{left:auto;right:3.4%;top:35%;font-size:1.2cqw}
+.football-card-hero .football-card-bottom{font-size:1.55cqw;bottom:3.2%;text-align:left;left:7%}
+.football-before{position:absolute;bottom:12%;left:7%;width:20%;padding:1.2% 1.2% .8%;background:#f5e8cd;transform:rotate(-7deg);z-index:5;box-shadow:3px 5px 0 #7b3e2b3d;border:1px solid #d8c49d}
+.football-before img{width:100%;aspect-ratio:.85;object-fit:cover;object-position:50% 20%;filter:saturate(.8)}
+.football-before span{display:block;font-family:var(--font-condensed);color:#785537;font-size:1.8cqw;margin-top:4%;letter-spacing:1px;text-align:center}
+@media(prefers-reduced-motion:reduce){.football-card *{animation:none!important;transition:none!important}}

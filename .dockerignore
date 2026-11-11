@@ -1,0 +1,11 @@
+node_modules
+.wrangler
+.sites-runtime
+.env*
+.dev.vars*
+.git
+docs
+design-previews
+dist
+.next
+*.log

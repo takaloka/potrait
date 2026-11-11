@@ -1,0 +1,21 @@
+{
+  "title": "Loka Studio — fictional portrait example",
+  "created": "2026-11-10",
+  "subject": "Entirely fictional Indonesian adult man, display name Arga",
+  "method": "Generated with the built-in image_gen tool, then edited using the first generated image as the reference. No live app API inference was used.",
+  "files": {
+    "before.jpg": "Synthetic starting portrait in a grey t-shirt",
+    "after.jpg": "Pre-generated wardrobe edit in a dark forest green utility jacket"
+  },
+  "size": "1080 x 1440",
+  "format_conversion": "The PNG tool outputs were proportionally resized to 1080 x 1440 and encoded as JPEG, quality 91. No creative editing was performed by code.",
+  "suggested_labels": [
+    "Tokoh fiktif · contoh visual AI",
+    "Contoh yang sudah disiapkan"
+  ],
+  "limitations": "This pair illustrates a possible creative direction only. It does not establish real-person identity preservation, latency, API cost, or live integration performance. The Loka Studio theme remains a prototype proposal.",
+  "prompts": {
+    "before": "Use case: photorealistic-natural. Asset type: clean portrait photo for a web photobooth demonstration, before image. Create one entirely fictional Indonesian adult man, about 30 years old, natural warm medium-brown complexion, short slightly wavy black hair, dark eyes, a light natural mustache and short subtle beard, friendly calm expression. This must not resemble a known public figure. He wears a plain light neutral-grey cotton crewneck t-shirt, with no text or logos. Chest-up portrait including shoulders and the upper torso, body at a very slight three-quarter angle and face looking at camera, centered. Natural realistic facial asymmetry and pores, believable cotton material, minimal retouching. Simple off-white light grey studio background. Soft diffuse window daylight from upper left, balanced neutral white balance, gentle shadows, no dramatic color cast, no glossy plastic skin, no excessive depth-of-field blur. Portrait aspect ratio 3:4. Leave modest headroom and clear contour around both shoulders. No text, captions, brand marks, borders, interface, collage, or watermark. A single photo only.",
+    "after": "Use case: identity-preserve. Edit this exact fictional man's photo for a before/after AI photobooth demonstration. Keep the same man's exact recognizable face, age, skin tone, facial proportions, hairstyle, mustache and short beard, expression, eye direction, head position, body shape, and chest-up portrait framing. Change his light grey t-shirt outfit into a dark forest green (#173c2e) contemporary utility jacket with a clean racing-inspired structured collar, subtle lime green (#c8f36b) thin trim along a seam and small lime fabric tabs, over a simple black inner layer. Realistic matte woven technical cotton, believable folds and stitching; not an armored superhero suit. No brands, logos, text, letter patches, slogans, or numbers. Preserve neutral off-white light grey studio backdrop. Slightly refine the studio light with a soft directional key from upper left and a gentle fill, keeping natural skin texture and neutral color balance. The face must remain the same person without beautification or face reshaping. No plastic skin, no glossy CGI, no exaggerated cinematic color, no extra hands or decorative props. Keep portrait aspect ratio 3:4 and the same placement and scale of the head for before/after comparison. Single finished photo only."
+  }
+}

@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+const base = process.argv[2];
+const sessionId = crypto.randomUUID();
+const act = (action, extra = {}, origin = base) => fetch(`${base}/api/screen`, { method: "POST", headers: { "Content-Type": "application/json", origin }, body: JSON.stringify({ sessionId, action, ...extra }) });
+assert.equal((await act("heartbeat")).status, 401, "anonymous display cannot acquire a lease");
+const read = await fetch(`${base}/api/screen`);
+assert.equal(read.status, 200);
+assert.equal((await read.json()).screen.sessionId, null, "public readers must not receive the lease owner's ID");
+assert.equal((await act("heartbeat", {}, "https://other.example")).status, 401);
+assert.equal((await act("unknown")).status, 401);
+assert.equal((await act("release")).status, 401);
+console.log("PASS: public screen is read-only; anonymous lease mutations denied.");

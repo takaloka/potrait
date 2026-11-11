@@ -1,0 +1,14 @@
+node_modules/
+.wrangler/
+.sites-runtime/
+.env
+.env.*
+!.env.example
+.dev.vars*
+dist/
+.next/
+release/
+*.log
+*.tsbuildinfo
+.DS_Store
+docs/qa/*source-manifest.json

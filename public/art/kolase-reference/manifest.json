@@ -1,0 +1,131 @@
+{
+  "source": "/Users/aaa/Downloads/cb7ad9f8394355a5fe7ad0728bf3c448.jpg",
+  "sourceSize": [
+    736,
+    920
+  ],
+  "method": "source crop; paper-boundary exterior flood or dark-ink matte; no generative redraw",
+  "assets": [
+    {
+      "name": "bird",
+      "label": "Burung",
+      "box": [
+        520,
+        0,
+        216,
+        190
+      ],
+      "mode": "paper"
+    },
+    {
+      "name": "hat",
+      "label": "Topi",
+      "box": [
+        130,
+        440,
+        230,
+        150
+      ],
+      "mode": "paper"
+    },
+    {
+      "name": "lantern",
+      "label": "Lampu minyak",
+      "box": [
+        12,
+        630,
+        202,
+        290
+      ],
+      "mode": "paper"
+    },
+    {
+      "name": "cactus",
+      "label": "Kaktus",
+      "box": [
+        520,
+        610,
+        198,
+        310
+      ],
+      "mode": "paper"
+    },
+    {
+      "name": "star-left",
+      "label": "Bintang kiri",
+      "box": [
+        0,
+        422,
+        139,
+        160
+      ],
+      "mode": "ink"
+    },
+    {
+      "name": "star-right",
+      "label": "Bintang kanan",
+      "box": [
+        611,
+        255,
+        125,
+        173
+      ],
+      "mode": "ink"
+    },
+    {
+      "name": "pennants",
+      "label": "Bendera + tali",
+      "box": [
+        0,
+        0,
+        562,
+        148
+      ],
+      "mode": "ink"
+    },
+    {
+      "name": "star-top",
+      "label": "Bintang atas",
+      "box": [
+        0,
+        65,
+        148,
+        147
+      ],
+      "mode": "ink"
+    },
+    {
+      "name": "scrap",
+      "label": "Potongan hitam",
+      "box": [
+        224,
+        158,
+        43,
+        52
+      ],
+      "mode": "ink"
+    },
+    {
+      "name": "green-swatch",
+      "label": "Sampel tekstur hijau",
+      "box": [
+        714,
+        440,
+        22,
+        135
+      ],
+      "mode": "swatch"
+    },
+    {
+      "name": "orange-swatch",
+      "label": "Sampel tekstur jingga",
+      "box": [
+        355,
+        576,
+        130,
+        23
+      ],
+      "mode": "swatch"
+    }
+  ]
+}

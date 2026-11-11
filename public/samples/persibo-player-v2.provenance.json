@@ -1,0 +1,20 @@
+{
+  "asset": "persibo-player-v2.png",
+  "title": "Arga — pemain sepak bola fiktif, contoh visual vintage",
+  "creationDate": "2026-11-10",
+  "label": "Tokoh fiktif · contoh visual AI yang sudah disiapkan",
+  "method": "Built-in image_gen image edit; genuine transparent PNG output; original bytes copied to project without image alteration.",
+  "identitySource": "before.jpg",
+  "styleReferences": [
+    "image(20261110-035200).png",
+    "image(20261110-035215).png",
+    "image(20261110-035228).png",
+    "image(20261110-035243).png",
+    "image(20261110-035256).png",
+    "image(20261110-035309).png"
+  ],
+  "referenceUse": "All six user references inspected for vintage football poster direction. Only before.jpg was supplied to imagegen, to preserve the fictional man's identity. Graphic ornaments and typography are implemented separately.",
+  "prompt": "Create an EDIT of the attached fictional-person photograph, for a vintage Indonesian football poster web project. The photograph is the sole identity reference. This is the SAME entirely fictional Indonesian adult man “Arga”, approximately 30, not a real athlete. Preserve his recognizable facial identity very closely: same facial proportions, warm medium-brown complexion, dark brown eyes, distinct slightly wavy side-swept black hair, light mustache and short small beard, natural skin texture, nose and jaw. Do not substitute another person or beautify into a model.\n\nNEW PORTRAIT: Proud, approachable, relaxed football player posing for an editorial team portrait, head to upper thighs fully framed. Shoulders and torso angled very slightly three-quarter, face nearly frontal looking clearly into the camera, an expressive warm confident smile with relaxed cheeks. Wearing a strong saturated orange vintage football jersey (true burnt tangerine/orange, not red) with a classic black retro pointed collar and understated black sleeve cuffs. Realistic cotton knit fabric, gentle material creases, short sleeves; dark black football shorts visible at lower edge. Absolutely plain unbranded kit: NO logos, NO crest, NO sponsor, NO text, NO numbers.\n\nPOSE: His left arm cradles one weathered vintage brown leather football securely at his left hip (the viewer’s right), fingers resting naturally on the ball with a believable grip. His right hand is a relaxed celebratory closed fist raised modestly at chest height (the viewer’s left), held away from his face. Two arms, two hands, believable finger anatomy and natural shoulder alignment. Keep the head, entire ball, both hands, both elbows, and upper-thigh silhouette inside the image with comfortable breathing room. Athletic but ordinary believable adult build, no exaggerated muscles.\n\nSTYLE: A convincing real photographic cutout suitable for a richly ornamented vintage football poster; medium-soft directional natural studio light, gently warm analogue photographic color with subtle authentic fine grain on the subject only. Crisp facial detail and hair edges, realistic pores, not plastic or airbrushed. Preserve the orange jersey strength and natural skin. Slight nostalgic editorial character, no harsh HDR, no glossy CGI, no painting or illustration. The user’s graphic references use vintage ornamental sports-poster composition; DO NOT generate those frames, typography, backgrounds, collages, or additional people. The deliverable is ONLY this single man with his ball.\n\nOUTPUT: A vertical 3:4 high-resolution PNG with GENUINE alpha transparency surrounding the person and ball, including transparent gaps around limbs. NO background, NO floor, NO rectangular grain layer, NO drop shadow, NO fake checkerboard, NO white/grey studio backdrop. Clean cutout edges, retain fine hair. Compose as one coherent portrait, not multiple alternatives.",
+  "usage": "Project sample for the 'Pemain Inti Persibo Bojonegoro Masa Depan' prototype. The plain orange and black kit contains no club crest, sponsor, or other logo.",
+  "limitations": "Prepared demonstration image of a fictional person. It is not evidence of live image API integration, general identity preservation for user uploads, runtime latency, or runtime cost."
+}

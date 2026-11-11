@@ -1,0 +1,34 @@
+{
+  "source": "User-supplied reference fee700b358d7e0477e148e7e376b5425.jpg",
+  "method": "AI-generated reconstruction; not recovered original layers. Transparent flower clusters isolated by alpha connected components.",
+  "assets": [
+    {
+      "name": "bottom-right.png",
+      "left": 611,
+      "top": 614,
+      "width": 574,
+      "height": 641
+    },
+    {
+      "name": "top-left.png",
+      "left": 25,
+      "top": 26,
+      "width": 595,
+      "height": 540
+    },
+    {
+      "name": "bottom-left.png",
+      "left": 39,
+      "top": 590,
+      "width": 430,
+      "height": 678
+    },
+    {
+      "name": "top-right.png",
+      "left": 624,
+      "top": 103,
+      "width": 575,
+      "height": 423
+    }
+  ]
+}

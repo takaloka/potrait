@@ -1,0 +1,64 @@
+.nusantara-poster { width: 100%; aspect-ratio: 4 / 5; overflow: hidden; background: #A64032; }
+.nusantara-poster > svg { display: block; width: 100%; height: auto; }
+.nusantara-poster .portrait-water-flow { animation: portrait-water-flow 5s linear infinite; }
+.nusantara-poster .portrait-image-reveal { animation: portrait-image-reveal 900ms ease-out both; }
+@keyframes portrait-water-flow { from { transform: translateY(0); } to { transform: translateY(30px); } }
+@keyframes portrait-image-reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .nusantara-poster .portrait-water-flow, .nusantara-poster .portrait-image-reveal { animation: none; }
+}
+.studio-artwork:has(.nusantara-poster) { aspect-ratio: 4 / 5; }
+.nusantara-screen { position: relative; display: grid; place-items: center; width: 100%; min-height: 100svh; overflow: hidden; color: #fff8e8; background: #A64032; }
+.nusantara-stage { position: relative; width: 100vw; height: 100svh; container-type: size; isolation: isolate; }
+.nusantara-landscape { position: absolute; inset: 0; }
+.nusantara-landscape > svg { display: block; width: 100%; height: 100%; }
+.nusantara-screen-header { position: absolute; top: 4%; right: 3%; left: 20%; display: flex; justify-content: space-between; align-items: center; }
+.nusantara-screen-header > span { font: italic 2cqw Georgia, serif; }
+.nusantara-screen-controls { display: flex; gap: 8px; }
+.nusantara-screen-controls button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #fff8e880; border-radius: 50%; background: #9c252550; color: #fff8e8; cursor: pointer; }
+.nusantara-screen-controls button:hover { background: #9c2525; }
+.nusantara-screen-controls button:focus-visible { outline: 3px solid #fff8e8; outline-offset: 3px; }
+.nusantara-join { position: absolute; top: 30%; left: 73%; width: 18%; text-align: center; }
+.nusantara-join-eyebrow { font-size: .65cqw; letter-spacing: .15em; }
+.nusantara-join h2 { margin: 1cqw 0 1.6cqw; font: 400 min(2.2cqw, 4cqh)/1.04 Georgia, serif; letter-spacing: -.035em; color: #fff8e8; }
+.nusantara-qr { display: grid; place-items: center; width: min(13.2cqw, 24cqh); aspect-ratio: 1; margin: 0 auto; padding: .6cqw; background: white; border-radius: 3px; }
+.nusantara-qr svg { width: 100%; height: 100%; display: block; }
+.nusantara-qr .join-qr { width: 100% !important; height: 100% !important; }
+.nusantara-qr .join-qr img { display: block; width: 100%; height: 100%; }
+.nusantara-join p { font-size: .85cqw; margin: 1.15cqw 0 .5cqw; }
+.nusantara-status { display: block; font-size: .68cqw; }
+.nusantara-screen-footer { position: absolute; bottom: 2%; left: 15%; right: 15%; display: flex; justify-content: space-between; font-size: .6cqw; letter-spacing: .12em; }
+.nusantara-screen .flora-sway { transform-box: fill-box; transform-origin: 50% 85%; will-change: transform; animation: nusantara-sway 6.4s ease-in-out -2s infinite alternate; }
+.nusantara-screen .flora-sway-b { animation-duration: 7.8s; animation-delay: -5.4s; transform-origin: 70% 10%; }
+.nusantara-screen .flora-sway-c { animation-duration: 5.2s; animation-delay: -7.2s; }
+.nusantara-screen .cloud-drift { will-change: transform; animation: nusantara-cloud 10s ease-in-out -3s infinite alternate; }
+.nusantara-screen .cloud-drift-b { animation-duration: 13s; animation-delay: -8s; }
+.nusantara-screen.is-motion-paused .flora-sway, .nusantara-screen.is-motion-paused .cloud-drift { animation-play-state: paused; }
+.nusantara-screen .collage-drift { animation: collage-drift 8s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+.nusantara-screen .collage-sway { animation: nusantara-sway 7s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 80%; }
+.nusantara-screen.is-motion-paused .collage-drift, .nusantara-screen.is-motion-paused .collage-sway { animation-play-state: paused; }
+@keyframes collage-drift { from { transform: translateY(-3px) rotate(-2deg); } to { transform: translateY(5px) rotate(2deg); } }
+@keyframes nusantara-sway { from { transform: translate(0, 3px) rotate(-3deg); } to { transform: translate(4px, -5px) rotate(3deg); } }
+@keyframes nusantara-cloud { from { transform: translate(-12px, 2px); } to { transform: translate(15px, -3px); } }
+.nusantara-screen .kolase-pennants { transform-origin:50% 0%; animation-duration:6.8s; }
+.nusantara-screen .kolase-lantern { transform-origin:50% 8%; animation-duration:8.4s; }
+.nusantara-screen .kolase-cactus { transform-origin:50% 100%; animation-duration:9.2s; }
+.nusantara-screen .kolase-star-top { transform-origin:center; animation-duration:11s; }
+.nusantara-screen .kolase-star-right { transform-origin:center; animation-duration:13s; }
+.nusantara-screen .kolase-star-left { transform-origin:center; animation-duration:9s; }
+@media (prefers-reduced-motion: reduce) {
+  .nusantara-screen .flora-sway, .nusantara-screen .cloud-drift, .nusantara-landscape { animation: none; will-change: auto; }
+  .nusantara-screen .collage-drift, .nusantara-screen .collage-sway { animation: none; }
+}
+@media (max-aspect-ratio: 4/5) {
+  .nusantara-screen { min-height: 100svh; align-content: start; padding-top: 12svh; }
+  .nusantara-stage { width: 100vw; height: auto; aspect-ratio: 16 / 9; container-type: inline-size; }
+  .nusantara-screen-header { top: -64px; left: 5%; right: 5%; }
+  .nusantara-screen-header > span { font-size: 24px; }
+  .nusantara-join { top: 110%; left: 15%; width: 70%; padding-bottom: 32px; }
+  .nusantara-join-eyebrow, .nusantara-status { font-size: 12px; }
+  .nusantara-join h2 { font-size: 32px; margin: 12px 0 20px; }
+  .nusantara-qr { width: 180px; padding: 8px; }
+  .nusantara-join p { font-size: 14px; margin-top: 16px; }
+  .nusantara-screen { min-height: max(100svh, calc(12svh + 56.25vw + 430px)); }
+}
