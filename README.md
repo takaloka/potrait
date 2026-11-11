@@ -6,12 +6,12 @@ Photobooth interaktif Taka Loka Initiative. Peserta memindai QR, memilih tema/ga
 
 Tema aplikasi: **Jendela Nusantara** dan **Kolase Rakyat**. Bengawan Peradaban masih berupa proof desain terpisah.
 
-## Lihat demonya
+## Alamat aplikasi
 
-- [Halaman peserta](https://loka-portrait-yuda.muhamadyudapradana.chatgpt.site/)
-- [Layar acara](https://loka-portrait-yuda.muhamadyudapradana.chatgpt.site/layar)
+- [Halaman peserta](https://potrait.takaloka.in/)
+- [Layar acara](https://potrait.takaloka.in/layar)
 
-Tautan demo di atas berasal dari versi historis; perubahan lokal tidak otomatis memperbaruinya. Status terbaru dan batas verifikasi ada di [status rilis](docs/release-status.md).
+Domain tujuan deployment adalah **potrait.takaloka.in**. Alamat di atas akan aktif setelah DNS, HTTPS, dan deployment selesai; push ke GitHub saja belum menerbitkan aplikasi. Status terbaru dan batas verifikasi ada di [status rilis](docs/release-status.md).
 
 ## Fitur dan status
 
