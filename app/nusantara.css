@@ -62,3 +62,11 @@
   .nusantara-join p { font-size: 14px; margin-top: 16px; }
   .nusantara-screen { min-height: max(100svh, calc(12svh + 56.25vw + 430px)); }
 }
+.nusantara-screen.is-empty { min-height: 100svh; padding-top: 0; background: #252b28; }
+.is-empty .nusantara-stage { min-height: 560px; height: 100svh; aspect-ratio: auto; }
+.is-empty .nusantara-screen-header { top: 24px; }
+.is-empty .nusantara-join { top: 50%; left: 50%; width: min(86%, 420px); padding: 0; transform: translate(-50%, -50%); }
+.is-empty .nusantara-join-eyebrow, .is-empty .nusantara-status { font-size: 12px; }
+.is-empty .nusantara-join h2 { margin: 16px 0 24px; font-size: clamp(28px, 5vw, 44px); }
+.is-empty .nusantara-qr { width: 180px; padding: 8px; }
+.is-empty .nusantara-join p { margin: 16px 0 8px; font-size: 14px; }

@@ -72,6 +72,7 @@ export default function EventScreen() {
   }, []);
 
   useEffect(() => {
+    setJoinUrl(`${window.location.origin}/`);
     const sessionId = getSessionId();
     const loaded = new Set<string>();
     const loading = new Set<string>();
@@ -137,13 +138,15 @@ export default function EventScreen() {
           setForeignLease(true);
           setError("");
           setImageError("");
-          try {
-            const response = await fetch("/api/screen", { cache: "no-store" });
-            if (response.ok && !stopped) acceptState(await response.json() as ScreenResponse);
-          } catch { /* the next heartbeat will retry */ }
         } else {
           setError(reason instanceof Error ? reason.message : "Koneksi layar terputus. Menyambungkan kembali…");
         }
+        // Public presentation remains readable even when this device cannot
+        // control the lease (including an expired operator session).
+        try {
+          const response = await fetch("/api/screen", { cache: "no-store" });
+          if (response.ok && !stopped) acceptState(await response.json() as ScreenResponse);
+        } catch { /* Keep the last successfully loaded presentation. */ }
       } finally {
         running = false;
         if (!stopped) timer = setTimeout(cycle, 1000);
@@ -177,10 +180,10 @@ export default function EventScreen() {
   const connectionMessage = data?.settings.paused ? "Pergantian potret dijeda" : queuedCount ? `${queuedCount} potret siap tayang` : processingCount ? "Potret berikutnya sedang diproses" : "Pindai QR untuk ikut";
 
   return (
-    <main ref={pageRef} className={`nusantara-screen ${motionPaused ? "is-motion-paused" : ""}`}>
+    <main ref={pageRef} className={`nusantara-screen ${!portrait ? "is-empty" : ""} ${motionPaused ? "is-motion-paused" : ""}`}>
       <h1 className="sr-only">Prospera Nusantara — layar acara</h1>
       <div className="nusantara-stage" ref={stageRef}>
-        <ScreenArtwork name={name} image={image} theme={portrait?.posterTheme} viewportRatio={viewportRatio} retry={artworkRetry} onError={setArtworkError} />
+        {portrait && <ScreenArtwork name={name} image={image} theme={portrait.posterTheme} viewportRatio={viewportRatio} retry={artworkRetry} onError={setArtworkError} />}
         <header className="nusantara-screen-header"><span>Loka Portrait</span><div className="nusantara-screen-controls"><button type="button" aria-label={motionPaused ? "Aktifkan animasi" : "Jeda animasi"} aria-pressed={motionPaused} onClick={() => setMotionPaused(value => !value)}>{motionPaused ? <Play size={18} /> : <Pause size={18} />}</button><button type="button" aria-label={fullscreen ? "Keluar dari layar penuh" : "Tampilkan layar penuh"} onClick={() => void toggleFullscreen()}>{fullscreen ? <Shrink size={18} /> : <Expand size={18} />}</button></div></header>
         <aside className="nusantara-join" aria-label="Pindai QR untuk ikut membuat potret">
           <span className="nusantara-join-eyebrow">ABADIKAN MOMENMU</span><h2>Jadi bagian<br />ceritanya.</h2>
