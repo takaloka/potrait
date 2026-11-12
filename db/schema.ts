@@ -15,6 +15,7 @@ export const photoboothSettings = sqliteTable("photobooth_settings", {
   id: integer("id").primaryKey(),
   eventName: text("event_name").notNull().default("Wajah-Wajah Kreatif Bojonegoro"),
   theme: text("theme").notNull().default("Loka Studio"),
+  themePolicy: text("theme_policy").notNull().default('{"enabled":["nusantara","kolase","bojonegoro-doelo"],"defaultTheme":"nusantara"}'),
   accepting: integer("accepting").notNull().default(1),
   paused: integer("paused").notNull().default(0),
   durationSeconds: integer("duration_seconds").notNull().default(12),

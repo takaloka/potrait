@@ -70,3 +70,16 @@
 .is-empty .nusantara-join h2 { margin: 16px 0 24px; font-size: clamp(28px, 5vw, 44px); }
 .is-empty .nusantara-qr { width: 180px; padding: 8px; }
 .is-empty .nusantara-join p { margin: 16px 0 8px; font-size: 14px; }
+
+/* Doelo uses the actual TV orientation; its photo is the entire stage. */
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]) { min-height: 100svh; padding: 0; background: #39271e; }
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-stage { width: 100vw; height: 100svh; aspect-ratio: auto; container-type: size; }
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-screen-header { top: 4%; left: auto; right: 4%; }
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-screen-header > span,
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-screen-footer,
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-join > :not(.nusantara-qr):not(h2) { display: none; }
+/* 62 / 1080 matches the SVG name inset on both axes, even on a tall TV. */
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-join { top: auto; bottom: 5.740741cqw; left: auto; right: 5.740741cqw; width: min(15cqw, 22cqh); padding: 0; transform: none; }
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-join h2 { margin: 0 0 1cqw; font: 400 2cqw/1.15 Georgia, serif; letter-spacing: 0; color: #fff6e7; text-shadow: 0 1px 4px #21180f; }
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-qr { width: 100%; padding: 0; border-radius: 0; }
+.nusantara-screen:has([data-theme="bojonegoro-doelo"]):fullscreen .nusantara-screen-header { display: none; }

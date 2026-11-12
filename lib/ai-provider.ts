@@ -53,7 +53,7 @@ function base64(bytes: Uint8Array): string {
   return btoa(chunks.join(""));
 }
 
-export function portraitPrompt(style: PortraitStyle | "legacy" = "legacy"): string {
+export function portraitPrompt(style: PortraitStyle | "legacy" = "legacy", theme?: string): string {
   const legacyPrompt = [
     "Edit the provided portrait into an expressive vintage-inspired football player portrait for the fan-made concept Pemain Inti Persibo Bojonegoro Masa Depan.",
     "Preserve the same person's recognizable facial features, natural skin tone, hairstyle, head covering if present, and age appearance.",
@@ -91,12 +91,12 @@ export function portraitPrompt(style: PortraitStyle | "legacy" = "legacy"): stri
     "Restrained warm sepia silver-gelatin photographic treatment, fine subtle film grain, soft directional studio lighting, a simple warm taupe painted backdrop and natural realistic facial detail. No heavy scratches, damage or artificial plastic skin.",
     "No words, logos, watermarks, decorative frame, flowers or poster graphics; those are composed by the application separately.",
   ].join(" ");
-  return prompt;
+  return theme === "bojonegoro-doelo" ? prompt.replace("dark carved wooden chair", "plain uncarved wooden studio chair") + " This is Bojonegoro Doelo: an understated early twentieth-century Javanese studio photograph, not a decorative poster. Use a plain softly lit taupe backdrop, restrained faded warm tones and no scene ornaments. Keep face, shoulders and hands centered within the middle 55 percent of the image width so a tall portrait display can crop the sides. Preserve the subject's identity, ancestry and natural skin tone; change only styling, clothing and lighting." : prompt;
 }
 
-export async function submitAiPortrait(config: AiConfig, photo: Uint8Array, style: PortraitStyle | "legacy" = "legacy"): Promise<{ id: string; pollingUrl: string }> {
+export async function submitAiPortrait(config: AiConfig, photo: Uint8Array, style: PortraitStyle | "legacy" = "legacy", theme?: string): Promise<{ id: string; pollingUrl: string }> {
   if (config.mode !== "live" || !config.configured) throw new AiProviderError("AI belum terhubung. Operator perlu mengatur akses API sebelum mode AI digunakan.");
-  const prompt = portraitPrompt(style);
+  const prompt = portraitPrompt(style, theme);
   const vintage = style !== "legacy";
   const body = config.model === "flux-kontext-pro"
     ? { prompt, input_image: base64(photo), aspect_ratio: vintage ? "4:5" : "3:4", output_format: "jpeg", safety_tolerance: 2, prompt_upsampling: false }

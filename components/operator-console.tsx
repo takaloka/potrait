@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpRight, CheckCircle2, Pause, Play, Clock3, ExternalLink, LoaderCircle, RefreshCw, RotateCcw, Search, SkipForward, Users } from "lucide-react";
 import type { Job, Settings, StateResponse } from "@/lib/photobooth-types";
+import { POSTER_THEMES } from "@/lib/poster-themes";
+import { Settings2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import Link from "./document-link";
 import { ChatgptConnectionControl } from "./chatgpt-connection";
 import { Button } from "@/components/ui/button";
@@ -32,6 +35,8 @@ export default function OperatorConsole() {
   const [data, setData] = useState<StateResponse | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [themeDraft, setThemeDraft] = useState<Settings["themePolicy"] | null>(null);
+  const [themeError, setThemeError] = useState("");
   const [busy, setBusy] = useState("");
   const [filter, updateFilter] = useState<"all" | "active" | "failed">("all");
   const [query, updateQuery] = useState("");
@@ -87,6 +92,7 @@ export default function OperatorConsole() {
       if (mounted.current) setNotice(success);
     } catch (reason) {
       if (mounted.current) setError(reason instanceof Error ? reason.message : "Perubahan belum tersimpan.");
+      if (mounted.current && key === "themePolicy") setThemeError(reason instanceof Error ? reason.message : "Tema belum tersimpan. Coba lagi.");
     } finally {
       mutationLock.current = false;
       if (mounted.current) setBusy("");
@@ -170,11 +176,14 @@ export default function OperatorConsole() {
             ].map(metric => <Card className="metric-card" key={metric.label}><div className="metric-label"><span>{metric.label}</span><metric.icon size={16} aria-hidden="true" /></div><strong>{data ? metric.value : "—"}</strong></Card>)}
           </section>
 
-          <Card className="event-controls" role="region" aria-label="Pengaturan acara">
+          <Card className="event-controls event-controls-compact" role="region" aria-label="Pengaturan acara">
             <div className="event-control"><div><strong>Penerimaan foto</strong><p>{!data ? "Memuat pengaturan…" : data.settings.accepting ? "Terbuka untuk peserta" : "Ditutup sementara"}</p></div>
               <label className="switch-hit"><span className="sr-only">Buka penerimaan foto</span><Switch aria-label="Buka penerimaan foto" checked={data?.settings.accepting ?? false} disabled={!data || !!busy} onCheckedChange={accepting => updateSetting({ accepting }, "accepting", accepting ? "Penerimaan foto dibuka." : "Penerimaan foto ditutup.")} /></label>
             </div>
             <div className="event-control"><div><strong>Tayangan layar</strong><p>{!data ? "Memuat pengaturan…" : data.settings.paused ? "Pergantian dijeda" : "Berganti otomatis"}</p></div><Button variant="outline" size="icon" aria-label={data?.settings.paused ? "Lanjutkan tayangan" : "Jeda tayangan"} title={data?.settings.paused ? "Lanjutkan tayangan" : "Jeda tayangan"} disabled={!data || !!busy} onClick={() => updateSetting({ paused: !data?.settings.paused }, "paused", data?.settings.paused ? "Tayangan dilanjutkan." : "Tayangan dijeda.")}>{busy === "paused" ? <LoaderCircle className="spin" aria-hidden="true" /> : data?.settings.paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}</Button></div>
+            <div className="event-control"><div><strong>Tema acara</strong><p>{data ? POSTER_THEMES.find(theme => theme.id === data.settings.themePolicy.defaultTheme)?.name : "Memuat pengaturan…"}</p></div>
+              <Button variant="outline" size="icon" aria-label="Atur tema acara" disabled={!data || !!busy} onClick={() => { if (data) { setThemeError(""); setThemeDraft({...data.settings.themePolicy, enabled:[...data.settings.themePolicy.enabled]}); } }}><Settings2 aria-hidden="true" /></Button>
+            </div>
           </Card>
 
           <ChatgptConnectionControl />
@@ -212,6 +221,36 @@ export default function OperatorConsole() {
           </Card>
           <footer className="dashboard-footer"><span>Loka Portrait · Taka Loka Initiative</span><span>Waktu ditampilkan dalam WIB</span></footer>
         </main>
+        <Dialog open={!!themeDraft} onOpenChange={open => { if (!open && busy !== "themePolicy") setThemeDraft(null); }}>
+          <DialogContent className="theme-settings-dialog" showCloseButton={busy !== "themePolicy"}>
+            <DialogHeader><DialogTitle>Tema acara</DialogTitle><DialogDescription>Aktifkan tema yang tersedia untuk peserta, lalu pilih tema default.</DialogDescription></DialogHeader>
+            {themeDraft && <fieldset className="theme-settings-list" disabled={!!busy}>
+              <legend className="sr-only">Ketersediaan dan tema default</legend>
+              {POSTER_THEMES.map(theme => {
+                const enabled = themeDraft.enabled.includes(theme.id);
+                return <div className="theme-settings-row" key={theme.id}>
+                  <div><strong>{theme.name}</strong><small>{enabled ? "Tersedia untuk peserta" : "Terkunci untuk peserta"}</small></div>
+                  <div className="theme-settings-actions">
+                    <label><input type="radio" name="defaultTheme" aria-label={`Jadikan ${theme.name} tema default`} checked={themeDraft.defaultTheme === theme.id} disabled={!enabled || !!busy} onChange={() => setThemeDraft({...themeDraft, defaultTheme:theme.id})} /> Default</label>
+                    <Switch aria-label={`Aktifkan ${theme.name}`} checked={enabled} disabled={!!busy || (enabled && themeDraft.enabled.length === 1)} onCheckedChange={checked => {
+                      const themes = checked ? [...themeDraft.enabled, theme.id] : themeDraft.enabled.filter(id => id !== theme.id);
+                      setThemeDraft({enabled:themes, defaultTheme:themes.includes(themeDraft.defaultTheme) ? themeDraft.defaultTheme : themes[0]});
+                    }} />
+                  </div>
+                </div>;
+              })}
+            </fieldset>}
+            <p className="theme-settings-hint">Minimal satu tema aktif. Tema default otomatis terpilih untuk peserta baru.</p>
+            {themeError && <p className="form-error" role="alert">{themeError}</p>}
+            <DialogFooter><Button variant="outline" disabled={busy === "themePolicy"} onClick={() => setThemeDraft(null)}>Batal</Button><Button disabled={!!busy || !themeDraft} onClick={() => {
+              setThemeError("");
+              void mutate("themePolicy", async () => {
+                const next = await readResponse<StateResponse>(await fetch("/api/settings", {method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({themePolicy:themeDraft})}));
+                if (mounted.current) { ++requestSequence.current; setData(next); setThemeDraft(null); }
+              }, "Tema acara diperbarui.");
+            }}>{busy === "themePolicy" ? "Menyimpan…" : "Simpan"}</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
         <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open && !busy) setDeleteTarget(null); }}>
           <AlertDialogContent>
             <AlertDialogHeader><AlertDialogTitle>Hapus {deleteTarget?.name}?</AlertDialogTitle><AlertDialogDescription>Data peserta dan fotonya akan dihapus permanen.</AlertDialogDescription></AlertDialogHeader>

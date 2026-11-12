@@ -23,7 +23,7 @@ interface JobRow {
   displayed_at: number | null; completed_at: number | null; provider_task_id: string | null;
   provider_polling_url: string | null; provider_poll_after: number | null; provider_lock: string | null; provider_lock_until: number | null;
 }
-interface SettingsRow { id: number; event_name: string; theme: string; accepting: number; paused: number; duration_seconds: number }
+interface SettingsRow { id: number; event_name: string; theme: string; accepting: number; paused: number; duration_seconds: number; theme_policy: string }
 interface ScreenRow { id: number; session_id: string | null; current_job_id: string | null; started_at: number | null; ends_at: number | null; last_seen_at: number | null; pause_remaining_ms: number | null }
 
 export class ApiFailure extends Error {
@@ -84,7 +84,7 @@ function publicJob(row: JobRow): Job {
   };
 }
 function publicSettings(row: SettingsRow): Settings {
-  return { eventName: row.event_name, theme: row.theme, accepting: row.accepting === 1, paused: row.paused === 1, durationSeconds: row.duration_seconds || 10 };
+  return { eventName: row.event_name, theme: row.theme, accepting: row.accepting === 1, paused: row.paused === 1, durationSeconds: row.duration_seconds || 10, themePolicy: JSON.parse(row.theme_policy) };
 }
 function publicScreen(row: ScreenRow, now: number): ScreenState {
   return { connected: !!row.session_id && row.last_seen_at !== null && now - row.last_seen_at < SCREEN_LEASE_MS,
@@ -191,7 +191,7 @@ async function advanceLive(db: D1Database, now: number): Promise<void> {
         if (!object) throw new AiProviderError("Foto sumber tidak ditemukan. Kirim foto ulang.");
         const photo = new Uint8Array(await object.arrayBuffer());
         if (row.ai_provider === "chatgpt") {
-          const bytes = await chatgptConnection().edit(photo, sniffImage(photo)?.mime ?? "image/jpeg", portraitPrompt(row.portrait_style));
+          const bytes = await chatgptConnection().edit(photo, sniffImage(photo)?.mime ?? "image/jpeg", portraitPrompt(row.portrait_style, row.poster_theme));
           const type = sniffImage(bytes);
           if (!type) throw new AiProviderError("Gambar hasil ChatGPT tidak terbaca.");
           const key = `${crypto.randomUUID()}-result.${type.extension}`;
@@ -200,7 +200,7 @@ async function advanceLive(db: D1Database, now: number): Promise<void> {
           if (!saved.meta.changes) await discardMedia(db,key);
           continue;
         }
-        const result = await submitAiPortrait(config, photo, row.portrait_style);
+        const result = await submitAiPortrait(config, photo, row.portrait_style, row.poster_theme);
         await db.prepare("UPDATE photobooth_jobs SET provider_task_id = ?, provider_polling_url = ?, provider_poll_after = ?, provider_lock = NULL, provider_lock_until = NULL WHERE id = ? AND status = 'processing' AND provider_lock = ?").bind(result.id, result.pollingUrl, Date.now() + 1500, row.id, token).run();
       } catch (error) {
         if (error instanceof ChatgptError && error.transient) {
@@ -408,7 +408,7 @@ export async function createJob(request: Request): Promise<Job> {
   // Missing style is retained only for old clients and already-issued retries.
   const portraitStyle = (rawStyle ?? "legacy") as Job["portraitStyle"];
   const rawTheme = form.get("posterTheme");
-  if (rawTheme !== null && !["nusantara", "kolase"].includes(String(rawTheme))) throw new ApiFailure("Pilih tema yang tersedia.", 400, "INVALID_POSTER_THEME");
+  if (rawTheme !== null && !["nusantara", "kolase", "bojonegoro-doelo"].includes(String(rawTheme))) throw new ApiFailure("Pilih tema yang tersedia.", 400, "INVALID_POSTER_THEME");
   const posterTheme = (rawTheme ?? "nusantara") as Job["posterTheme"];
   if (["batik", "kebaya-kasual", "retro-festival"].includes(portraitStyle) && posterTheme !== "kolase") throw new ApiFailure("Gaya ini tersedia untuk tema Kolase Rakyat.", 400, "INVALID_PORTRAIT_STYLE");
   let photo: Uint8Array | null = null;
@@ -433,7 +433,9 @@ export async function createJob(request: Request): Promise<Job> {
     if (duplicate.fingerprint !== fingerprint && !sameSample) throw new ApiFailure("Kode pengiriman sudah dipakai untuk foto lain. Mulai pengiriman baru.", 409, "REQUEST_CONFLICT");
     return publicJob(duplicate);
   }
-  if (!(await readSettings(db)).accepting) throw new ApiFailure("Penerimaan foto sedang ditutup. Silakan coba lagi nanti.", 409, "SUBMISSIONS_CLOSED");
+  const eventSettings = publicSettings(await readSettings(db));
+  if (!eventSettings.themePolicy.enabled.includes(posterTheme)) throw new ApiFailure("Tema tidak tersedia di acara ini. Pilih tema aktif lalu kirim kembali.", 409, "THEME_UNAVAILABLE");
+  if (!eventSettings.accepting) throw new ApiFailure("Penerimaan foto sedang ditutup. Silakan coba lagi nanti.", 409, "SUBMISSIONS_CLOSED");
   const limit=(value:string|undefined,fallback:number,max:number)=>{const n=Number(value);return Number.isInteger(n)&&n>0&&n<=max?n:fallback;};
   const settings=environment();
   const eventLimit=limit(settings.EVENT_JOB_LIMIT,200,10000),queueLimit=limit(settings.MAX_QUEUED_JOBS,30,500),networkLimit=limit(settings.UPLOADS_PER_HOUR,20,1000);
@@ -455,15 +457,18 @@ export async function createJob(request: Request): Promise<Job> {
   const now = Date.now();
   try {
     const results = await db.batch([
-      db.prepare("INSERT OR IGNORE INTO photobooth_jobs (id, request_id, fingerprint, name, status, mode, is_sample, original_key, original_url, created_at, queued_at, portrait_style, ai_provider, poster_theme, expires_at) SELECT ?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM photobooth_settings WHERE id = 1 AND accepting = 1) AND (SELECT used FROM photobooth_budget WHERE id=1) < ? AND (SELECT COUNT(*) FROM photobooth_jobs WHERE status IN ('queued','processing')) < ?")
-      .bind(id, requestId, fingerprint, name, mode, isSample ? 1 : 0, key, originalUrl, now, now, portraitStyle, config.provider, posterTheme,now+limit(settings.RETENTION_DAYS,7,90)*86400000,eventLimit,queueLimit),
+      db.prepare("INSERT OR IGNORE INTO photobooth_jobs (id, request_id, fingerprint, name, status, mode, is_sample, original_key, original_url, created_at, queued_at, portrait_style, ai_provider, poster_theme, expires_at) SELECT ?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM photobooth_settings, json_each(theme_policy, '$.enabled') WHERE photobooth_settings.id = 1 AND accepting = 1 AND json_each.value = ?) AND (SELECT used FROM photobooth_budget WHERE id=1) < ? AND (SELECT COUNT(*) FROM photobooth_jobs WHERE status IN ('queued','processing')) < ?")
+      .bind(id, requestId, fingerprint, name, mode, isSample ? 1 : 0, key, originalUrl, now, now, portraitStyle, config.provider, posterTheme,now+limit(settings.RETENTION_DAYS,7,90)*86400000,posterTheme,eventLimit,queueLimit),
       db.prepare("UPDATE photobooth_budget SET used=used+1 WHERE id=1 AND EXISTS(SELECT 1 FROM photobooth_jobs WHERE id=?)").bind(id),
     ]);
     const result=results[0];
     if (!result.meta.changes) {
       if (key) await discardMedia(db,key);
       const raced = await db.prepare("SELECT * FROM photobooth_jobs WHERE request_id = ?").bind(requestId).first<JobRow>();
-      if (!raced) throw new ApiFailure("Antrean atau kuota penuh, atau penerimaan foto ditutup. Coba lagi nanti.", 429, "ADMISSION_CLOSED");
+      if (!raced) {
+        if (!publicSettings(await readSettings(db)).themePolicy.enabled.includes(posterTheme)) throw new ApiFailure("Tema tidak tersedia di acara ini. Pilih tema aktif lalu kirim kembali.", 409, "THEME_UNAVAILABLE");
+        throw new ApiFailure("Antrean atau kuota penuh, atau penerimaan foto ditutup. Coba lagi nanti.", 429, "ADMISSION_CLOSED");
+      }
       const sameSample = isSample && raced.is_sample === 1 && raced.name === name && raced.portrait_style === portraitStyle && raced.poster_theme === posterTheme;
       if (raced.fingerprint !== fingerprint && !sameSample) throw new ApiFailure("Kode pengiriman sudah digunakan untuk foto lain.", 409, "REQUEST_CONFLICT");
       return publicJob(raced);
@@ -512,10 +517,15 @@ export async function actOnJob(id: string, action: unknown): Promise<Job> {
 export async function updateSettings(payload: Record<string, unknown>): Promise<StateResponse> {
   // Old clients used zero for an indefinite hold. It now selects the default loop interval.
   if (payload.durationSeconds === 0) payload = { ...payload, durationSeconds: 10 };
-  const allowed = ["eventName", "theme", "accepting", "paused", "durationSeconds"];
+  const allowed = ["eventName", "theme", "accepting", "paused", "durationSeconds", "themePolicy"];
   if (Object.keys(payload).some(k => !allowed.includes(k))) throw new ApiFailure("Ada pengaturan yang tidak dikenal.");
   const assignments: string[] = [];
   const values: (string | number)[] = [];
+  if ("themePolicy" in payload) {
+    const policy = payload.themePolicy as Settings["themePolicy"] | null;
+    if (!policy || !Array.isArray(policy.enabled) || !policy.enabled.length || policy.enabled.some(theme => !["nusantara", "kolase", "bojonegoro-doelo"].includes(theme)) || new Set(policy.enabled).size !== policy.enabled.length || !policy.enabled.includes(policy.defaultTheme)) throw new ApiFailure("Aktifkan minimal satu tema dan pilih tema default dari tema aktif.", 400, "INVALID_THEME_POLICY");
+    assignments.push("theme_policy = ?"); values.push(JSON.stringify({enabled: policy.enabled, defaultTheme: policy.defaultTheme}));
+  }
   if ("eventName" in payload) {
     if (typeof payload.eventName !== "string" || !payload.eventName.trim() || [...payload.eventName.trim()].length > 80 || /[<>\u0000-\u001f]/u.test(payload.eventName)) throw new ApiFailure("Nama acara harus 1–80 karakter.");
     assignments.push("event_name = ?"); values.push(payload.eventName.trim());

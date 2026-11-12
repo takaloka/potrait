@@ -14,6 +14,9 @@ export async function apiJson<T>(input: string, init?: RequestInit): Promise<T> 
   try {
     data = await response.json();
   } catch {
+    if (response.status === 413) {
+      throw new ApiError("Unggahan terlalu besar. Foto maksimal 8 MB; pilih foto yang lebih kecil.", 413);
+    }
     throw new ApiError("Server belum dapat dihubungi. Coba lagi sebentar.", response.status);
   }
   if (!response.ok) {

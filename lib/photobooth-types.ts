@@ -1,7 +1,7 @@
 export type JobStatus = "queued" | "processing" | "ready" | "displaying" | "done" | "failed" | "skipped";
 export type PhotoboothMode = "demo" | "live";
 export type PortraitStyle = "beskap" | "kebaya" | "jas" | "batik" | "kebaya-kasual" | "retro-festival";
-export type PosterTheme = "nusantara" | "kolase";
+export type PosterTheme = "nusantara" | "kolase" | "bojonegoro-doelo";
 
 export interface Job {
   id: string;
@@ -21,6 +21,7 @@ export interface Job {
 }
 
 export interface Settings {
+  themePolicy: { enabled: PosterTheme[]; defaultTheme: PosterTheme };
   eventName: string;
   theme: string;
   accepting: boolean;

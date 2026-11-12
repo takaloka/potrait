@@ -16,7 +16,7 @@ async function embeddedImage(url: string): Promise<string> {
 }
 
 export async function renderPosterBlob(job: Pick<Job, "name" | "resultUrl" | "originalUrl"> & Partial<Pick<Job, "posterTheme">>): Promise<Blob> {
-  const keys = job.posterTheme === "kolase" ? [] : NUSANTARA_ASSETS;
+  const keys = !job.posterTheme || job.posterTheme === "nusantara" ? NUSANTARA_ASSETS : [];
   const kolase = job.posterTheme === "kolase" ? [...Object.values(kolaseSourceAssets),kolaseSourceFont] : [];
   const [image, ...layers] = await Promise.all([
     embeddedImage(job.resultUrl || job.originalUrl),

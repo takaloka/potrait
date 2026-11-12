@@ -25,13 +25,15 @@ const db=new DatabaseSync(databasePath);
 const table=name=>!!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(name);
 const column=name=>db.prepare('PRAGMA table_info(photobooth_jobs)').all().some(c=>c.name===name);
 const present={
+ '0008_event_theme_policy.sql':db.prepare('PRAGMA table_info(photobooth_settings)').all().some(c=>c.name==='theme_policy'),
  '0000_soft_zaladane.sql':table('photobooth_jobs'),
  '0001_operator_access.sql':table('operator_account'),
  '0002_portrait_style.sql':column('portrait_style'),
  '0003_chatgpt_connection.sql':table('chatgpt_connection'),
  '0004_poster_theme.sql':column('poster_theme'),
  '0005_kolase_portrait_styles.sql':db.prepare("SELECT sql FROM sqlite_master WHERE name='photobooth_jobs'").get().sql.includes('retro-festival'),
- '0006_release_hardening.sql':column('result_token')&&table('photobooth_cleanup'),
+  '0006_release_hardening.sql':column('result_token')&&table('photobooth_cleanup'),
+  '0007_bojonegoro_doelo.sql':db.prepare("SELECT sql FROM sqlite_master WHERE name='photobooth_jobs'").get().sql.includes('bojonegoro-doelo'),
 };
 try{
  const pending=(await readdir('drizzle')).filter(f=>f.endsWith('.sql')&&!present[f]);

@@ -93,7 +93,40 @@ globalThis.fetch = async (input, init) => {
 };
 
 try {
-  if (oldArgument === "chatgpt") {
+  if (oldArgument === "theme-policy") {
+    const { default: assert } = await import('node:assert/strict');
+    const original = (await app.getState()).settings.themePolicy;
+    assert.deepEqual(original, {enabled: ['nusantara', 'kolase', 'bojonegoro-doelo'], defaultTheme: 'nusantara'});
+    const submit = (theme, requestId = crypto.randomUUID()) => {
+      const body = new FormData();
+      body.set('name', 'Theme test'); body.set('sample', 'true'); body.set('requestId', requestId);
+      if (theme) body.set('posterTheme', theme);
+      return app.createJob(new Request('http://127.0.0.1:4173/api/jobs', {method:'POST', body}));
+    };
+    const retryId = crypto.randomUUID();
+    const old = await submit('nusantara', retryId);
+    const policy = {enabled:['bojonegoro-doelo'], defaultTheme:'bojonegoro-doelo'};
+    await app.updateSettings({themePolicy:policy});
+    assert.deepEqual((await app.getState()).settings.themePolicy, policy);
+    assert.equal((await submit('nusantara', retryId)).id, old.id, 'existing retries survive locking');
+    for (const theme of ['nusantara','kolase',null]) await assert.rejects(submit(theme), e => e.code === 'THEME_UNAVAILABLE');
+    assert.equal((await submit('bojonegoro-doelo')).posterTheme, 'bojonegoro-doelo');
+    for (const invalid of [null, {}, {enabled:[],defaultTheme:'nusantara'}, {enabled:['unknown'],defaultTheme:'unknown'}, {enabled:['kolase'],defaultTheme:'nusantara'}, {enabled:['kolase','kolase'],defaultTheme:'kolase'}]) {
+      await assert.rejects(app.updateSettings({themePolicy:invalid}));
+      assert.deepEqual((await app.getState()).settings.themePolicy, policy, 'invalid update is atomic');
+    }
+    // Operator locking a theme while its photo is normalized must win admission.
+    await app.updateSettings({themePolicy:original});
+    const put = BUCKET.put;
+    BUCKET.put = async (...args) => { await put(...args); await app.updateSettings({themePolicy:policy}); };
+    const body = new FormData();
+    body.set('name','Race'); body.set('consent','true'); body.set('requestId',crypto.randomUUID()); body.set('posterTheme','kolase');
+    body.set('image',new Blob([await sharp({create:{width:20,height:20,channels:3,background:'white'}}).png().toBuffer()],{type:'image/png'}),'photo.png');
+    await assert.rejects(app.createJob(new Request('http://127.0.0.1:4173/api/jobs',{method:'POST',body})), e => e.code === 'THEME_UNAVAILABLE');
+    assert.equal(files.size,0,'rejected racing upload is cleaned up');
+    BUCKET.put = put;
+    console.log('PASS theme policy: persistence, validation, locks, legacy retries and atomic admission.');
+  } else if (oldArgument === "chatgpt") {
     const { default: assert } = await import("node:assert/strict");
     const authSource = (await readFile(new URL("../lib/operator-auth.ts", import.meta.url), "utf8")).replace('import { env } from "cloudflare:workers";', "const env = globalThis.__photoboothTestEnvironment;").replace('from "./photobooth-server";', `from ${JSON.stringify(dataModule(serverSource))};`);
     const routeSource = (await readFile(new URL("../app/api/operator/chatgpt/route.ts", import.meta.url), "utf8")).replaceAll('"@/lib/photobooth-server"', JSON.stringify(dataModule(serverSource))).replaceAll('"@/lib/operator-auth"', JSON.stringify(dataModule(authSource)));
@@ -151,9 +184,10 @@ try {
   } else if (oldArgument === "styles") {
     const { default: assert } = await import("node:assert/strict");
     const photo = await readFile(new URL("../public/samples/before.jpg", import.meta.url));
-    const request = (style, requestId = crypto.randomUUID()) => {
+    const request = (style, requestId = crypto.randomUUID(), theme = "nusantara") => {
       const form = new FormData(); form.set("consent", "true"); form.set("name", "Style test"); form.set("requestId", requestId);
       if (style !== undefined) form.set("portraitStyle", style);
+      form.set("posterTheme", theme);
       form.set("image", new Blob([photo], { type: "image/jpeg" }), "test.jpg");
       return new Request("http://127.0.0.1:4173/api/jobs", { method: "POST", body: form });
     };
@@ -181,6 +215,17 @@ try {
         sqlite.prepare("UPDATE photobooth_jobs SET status = 'failed' WHERE id = ?").run(job.id);
       }
       assert.equal(submitted.length, 3);
+      const doeloRequestId = crypto.randomUUID();
+      const doelo = await app.createJob(request("beskap", doeloRequestId, "bojonegoro-doelo"));
+      assert.equal(doelo.posterTheme, "bojonegoro-doelo");
+      assert.equal((await app.createJob(request("beskap", doeloRequestId, "bojonegoro-doelo"))).id, doelo.id);
+      await assert.rejects(app.createJob(request("beskap", doeloRequestId, "nusantara")), e => e.code === "REQUEST_CONFLICT");
+      await app.processJobs();
+      assert.match(submitted.at(-1).prompt, /Bojonegoro Doelo/);
+      assert.match(submitted.at(-1).prompt, /plain uncarved wooden studio chair/);
+      assert.equal(await app.getJobTheme(doelo.id), "bojonegoro-doelo");
+      await assert.rejects(app.createJob(request("batik", crypto.randomUUID(), "bojonegoro-doelo")), e => e.code === "INVALID_PORTRAIT_STYLE");
+      console.log("PASS Bojonegoro theme: API persistence, duplicate reuse, cross-theme conflict, provider prompt, result theme and clothing restrictions.");
       console.log("PASS: style validation/storage/provider dispatch, legacy record support, style-aware idempotency, retry persistence and no generation resubmission on poll (SQLite/R2 and mocked BFL).");
     } finally { globalThis.fetch = adapterFetch; }
   } else if (oldArgument === "slideshow") {

@@ -9,6 +9,8 @@ import {
   LoaderCircle,
   Upload,
   X,
+  Music2,
+  AtSign,
 } from "lucide-react";
 import { FootballPoster } from "./football-poster";
 import { Button } from "@/components/ui/button";
@@ -18,9 +20,14 @@ import { apiJson } from "@/lib/photobooth-client";
 import type { Job, PortraitStyle, PosterTheme, StateResponse } from "@/lib/photobooth-types";
 import { ThemePicker } from "./theme-picker";
 import { posterTheme as themeInfo } from "@/lib/poster-themes";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+function InstagramIcon({size = 24, strokeWidth = 1.7}: {size?: number; strokeWidth?: number}) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>;
+}
 
 function errorMessage(error: unknown): string {
   return error instanceof Error
@@ -39,9 +46,14 @@ export default function ParticipantForm() {
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
+  const [followOpen, setFollowOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const followConfirmedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const requestIdRef = useRef<string | null>(null);
   const submittingRef = useRef(false);
+  const selectedThemeRef = useRef<PosterTheme | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -56,6 +68,12 @@ export default function ParticipantForm() {
         });
         if (!active) return;
         setState(next);
+        if (!submittingRef.current && (!selectedThemeRef.current || !next.settings.themePolicy.enabled.includes(selectedThemeRef.current))) {
+          selectedThemeRef.current = next.settings.themePolicy.defaultTheme;
+          setPosterTheme(next.settings.themePolicy.defaultTheme);
+          setPortraitStyle("");
+          requestIdRef.current = null;
+        }
         setConnectionError("");
       } catch (error) {
         if (!active || controller.signal.aborted) return;
@@ -104,6 +122,8 @@ export default function ParticipantForm() {
 
   function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     selectPhoto(event.currentTarget.files?.[0]);
+    // The draft owns the File; reset the picker so the same file can be retried.
+    event.currentTarget.value = "";
   }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
@@ -123,12 +143,15 @@ export default function ParticipantForm() {
     setPhoto(null);
     setPhotoUrl("");
     if (inputRef.current) inputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
     inputRef.current?.focus();
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submittingRef.current) return;
+    const followConfirmed = followConfirmedRef.current;
+    followConfirmedRef.current = false;
     const cleanName = name.trim();
     if (!cleanName) {
       setFormError("Isi nama panggilan yang ingin ditampilkan.");
@@ -157,6 +180,12 @@ export default function ParticipantForm() {
     }
     if (state.mode === "live" && !state.aiConfigured) {
       setFormError("Pemrosesan foto belum tersedia. Hubungi operator.");
+      return;
+    }
+
+    if (!followConfirmed) {
+      setFormError("");
+      setFollowOpen(true);
       return;
     }
 
@@ -203,7 +232,7 @@ export default function ParticipantForm() {
 
       <main className="participant-main" id="konten-utama">
         <div className="participant-grid participant-theme-grid">
-          <ThemePicker value={posterTheme} disabled={busy} onChange={theme => { changeDraft(); setPosterTheme(theme); setPortraitStyle(""); }} />
+          <ThemePicker value={posterTheme} policy={state?.settings.themePolicy} disabled={busy || !state} onChange={theme => { changeDraft(); selectedThemeRef.current = theme; setPosterTheme(theme); setPortraitStyle(""); }} />
           <section className="studio-intro" aria-labelledby="portrait-heading">
             <header className="studio-panel-heading"><h1 id="portrait-heading">Pratinjau</h1></header>
             <div className="studio-preview">
@@ -215,7 +244,7 @@ export default function ParticipantForm() {
           <Card className="join-panel" id="form-foto" role="region" tabIndex={-1} aria-labelledby="join-heading">
             <header className="studio-panel-heading"><h2 id="join-heading">Foto kamu</h2><Camera size={18} aria-hidden="true" /></header>
 
-            <form onSubmit={submit} aria-busy={busy}>
+            <form ref={formRef} onSubmit={submit} aria-busy={busy}>
               <label className="field-label" htmlFor="participant-name">
                 <span>Nama panggilan</span>
                 <span className="field-note">Maks. 32 karakter</span>
@@ -297,6 +326,19 @@ export default function ParticipantForm() {
                   </>
                 )}
               </div>
+              <Button className="camera-button" variant="outline" type="button" disabled={busy} aria-describedby="photo-hint" onClick={() => cameraInputRef.current?.click()}>
+                <Camera size={18} aria-hidden="true" />
+                Ambil foto
+              </Button>
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="user"
+                hidden
+                disabled={busy}
+                onChange={handlePhotoChange}
+              />
               <p className="file-hint" id="photo-hint">JPG, PNG, atau WebP · maksimal 8 MB{photo ? ` · ${(photo.size / 1024 / 1024).toLocaleString("id-ID", { maximumFractionDigits: 1 })} MB terpilih` : ""}</p>
 
               {formError && <p className="form-error" role="alert"><CircleAlert size={17} aria-hidden="true" /><span>{formError}</span></p>}
@@ -313,6 +355,27 @@ export default function ParticipantForm() {
         </div>
 
       </main>
+
+      <Dialog open={followOpen} onOpenChange={setFollowOpen}>
+        <DialogContent className="social-follow-dialog">
+          <DialogHeader><DialogTitle>Ikuti cerita Takaloka</DialogTitle><DialogDescription>Temukan cerita, karya, dan acara berikutnya. Ikuti Takaloka di media sosial sebelum melanjutkan potretmu.</DialogDescription></DialogHeader>
+          <nav className="social-follow-links" aria-label="Media sosial Takaloka">
+            {[
+              {name:"Instagram", href:"https://www.instagram.com/takaloka.in/", icon:InstagramIcon},
+              {name:"TikTok", href:"https://www.tiktok.com/@takaloka.in", icon:Music2},
+              {name:"Threads", href:"https://www.threads.com/@takaloka.in", icon:AtSign},
+            ].map(social => <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer" aria-label={`${social.name} Takaloka (tab baru)`}><social.icon size={24} strokeWidth={1.7} aria-hidden="true" /><span>{social.name}</span><ArrowUpRight size={14} aria-hidden="true" /></a>)}
+          </nav>
+          <p className="social-follow-note">Tautan dibuka di tab baru. Foto dan isianmu tetap ada di sini.</p>
+          <DialogFooter><Button className="social-follow-continue" type="button" disabled={busy} onClick={() => {
+            if (submittingRef.current) return;
+            setFollowOpen(false);
+            followConfirmedRef.current = true;
+            formRef.current?.requestSubmit();
+            followConfirmedRef.current = false;
+          }}>Sudah follow, lanjutkan<ArrowUpRight size={17} aria-hidden="true" /></Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </>
   );

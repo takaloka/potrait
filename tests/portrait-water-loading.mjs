@@ -17,12 +17,13 @@ const exported=nusantaraSvg({name:'Test',image:'/generated.png'});
 assert.doesNotMatch(exported,/portrait-image-reveal|portrait-water-flow/,'static exports stay static');
 const sourceAssetsUrl=moduleUrl(await readFile(new URL('../lib/kolase-display-assets.ts',import.meta.url),'utf8'));
 const kolaseUrl=moduleUrl((await readFile(new URL('../lib/kolase-art.ts',import.meta.url),'utf8')).replace('"./kolase-display-assets"',JSON.stringify(sourceAssetsUrl)));
-const themesUrl=moduleUrl((await readFile(new URL('../lib/poster-themes.ts',import.meta.url),'utf8')).replace('"./nusantara-art"',JSON.stringify(artUrl)).replace('"./kolase-art"',JSON.stringify(kolaseUrl)));
+const doeloUrl=moduleUrl(await readFile(new URL('../lib/bojonegoro-art.ts',import.meta.url),'utf8'));
+const themesUrl=moduleUrl((await readFile(new URL('../lib/poster-themes.ts',import.meta.url),'utf8')).replace('"./nusantara-art"',JSON.stringify(artUrl)).replace('"./kolase-art"',JSON.stringify(kolaseUrl)).replace('"./bojonegoro-art"',JSON.stringify(doeloUrl)));
 const {posterSvg}=await import(themesUrl);
-for(const theme of ['nusantara','kolase']) {
+for(const theme of ['nusantara','kolase','bojonegoro-doelo']) {
   const pending=posterSvg({theme,name:'<script>Test</script>',image:'/private-original.png',portraitLoading:true});
   assert.doesNotMatch(pending,/<script>|private-original/);
-  assert.match(pending,/portrait-water-flow/);
+  assert.match(pending,theme==='bojonegoro-doelo'?/Menyiapkan potret/:/portrait-water-flow/);
   const screen=posterSvg({theme,name:'',image:'',landscape:true,liveSlots:true});
   assert.equal((screen.match(/data-portrait-slot=/g)||[]).length,1);
   assert.equal((screen.match(/data-portrait-name=/g)||[]).length,1);

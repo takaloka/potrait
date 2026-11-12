@@ -70,8 +70,9 @@ export function ScreenArtwork({ image, name, viewportRatio, retry, onError, them
     function updateLabel() {
       if (!label || !element) return;
       label.textContent = name;
-      label.setAttribute("font-size", String(name.length > 38 ? 34 : name.length > 22 ? 44 : 62));
-      if (name.length > 38) { label.setAttribute("textLength", "640"); label.setAttribute("lengthAdjust", "spacingAndGlyphs"); }
+      const doelo = displayedTheme === "bojonegoro-doelo";
+      label.setAttribute("font-size", String(doelo ? 38 : name.length > 38 ? 34 : name.length > 22 ? 44 : 62));
+      if (name.length > (doelo ? 26 : 38)) { label.setAttribute("textLength", doelo ? "690" : "640"); label.setAttribute("lengthAdjust", "spacingAndGlyphs"); }
       else { label.removeAttribute("textLength"); label.removeAttribute("lengthAdjust"); }
       element.querySelector("svg")?.setAttribute("aria-label", `Potret ${name}`);
     }
@@ -83,5 +84,5 @@ export function ScreenArtwork({ image, name, viewportRatio, retry, onError, them
     return () => { stale = true; clearTimeout(timeout); };
   }, [image, name, viewportRatio, retry, onError, theme, displayedTheme]);
 
-  return <div ref={root} className="nusantara-landscape" dangerouslySetInnerHTML={artwork} />;
+  return <div ref={root} className="nusantara-landscape" data-theme={displayedTheme} dangerouslySetInnerHTML={artwork} />;
 }
