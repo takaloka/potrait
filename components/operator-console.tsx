@@ -37,6 +37,8 @@ export default function OperatorConsole() {
   const [notice, setNotice] = useState("");
   const [themeDraft, setThemeDraft] = useState<Settings["themePolicy"] | null>(null);
   const [themeError, setThemeError] = useState("");
+  const [displayDraft, setDisplayDraft] = useState<{ durationSeconds: string; replayLimit: string; screenRotation: Settings["screenRotation"] } | null>(null);
+  const [displayError, setDisplayError] = useState("");
   const [busy, setBusy] = useState("");
   const [filter, updateFilter] = useState<"all" | "active" | "failed">("all");
   const [query, updateQuery] = useState("");
@@ -93,6 +95,7 @@ export default function OperatorConsole() {
     } catch (reason) {
       if (mounted.current) setError(reason instanceof Error ? reason.message : "Perubahan belum tersimpan.");
       if (mounted.current && key === "themePolicy") setThemeError(reason instanceof Error ? reason.message : "Tema belum tersimpan. Coba lagi.");
+      if (mounted.current && key === "display") setDisplayError(reason instanceof Error ? reason.message : "Pengaturan belum tersimpan. Coba lagi.");
     } finally {
       mutationLock.current = false;
       if (mounted.current) setBusy("");
@@ -180,7 +183,10 @@ export default function OperatorConsole() {
             <div className="event-control"><div><strong>Penerimaan foto</strong><p>{!data ? "Memuat pengaturan…" : data.settings.accepting ? "Terbuka untuk peserta" : "Ditutup sementara"}</p></div>
               <label className="switch-hit"><span className="sr-only">Buka penerimaan foto</span><Switch aria-label="Buka penerimaan foto" checked={data?.settings.accepting ?? false} disabled={!data || !!busy} onCheckedChange={accepting => updateSetting({ accepting }, "accepting", accepting ? "Penerimaan foto dibuka." : "Penerimaan foto ditutup.")} /></label>
             </div>
-            <div className="event-control"><div><strong>Tayangan layar</strong><p>{!data ? "Memuat pengaturan…" : data.settings.paused ? "Pergantian dijeda" : "Berganti otomatis"}</p></div><Button variant="outline" size="icon" aria-label={data?.settings.paused ? "Lanjutkan tayangan" : "Jeda tayangan"} title={data?.settings.paused ? "Lanjutkan tayangan" : "Jeda tayangan"} disabled={!data || !!busy} onClick={() => updateSetting({ paused: !data?.settings.paused }, "paused", data?.settings.paused ? "Tayangan dilanjutkan." : "Tayangan dijeda.")}>{busy === "paused" ? <LoaderCircle className="spin" aria-hidden="true" /> : data?.settings.paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}</Button></div>
+            <div className="event-control"><div><strong>Tayangan layar</strong><p>{!data ? "Memuat pengaturan…" : data.settings.paused ? "Pergantian dijeda" : "Berganti otomatis"}</p></div><div className="display-control-actions">
+              <Button variant="outline" size="icon" aria-label="Atur tayangan layar" title="Atur tayangan layar" disabled={!data || !!busy} onClick={() => { if (data) { setDisplayError(""); setDisplayDraft({durationSeconds:String(data.settings.durationSeconds), replayLimit:String(data.settings.replayLimit ?? 10), screenRotation:data.settings.screenRotation ?? 0}); } }}><Settings2 aria-hidden="true" /></Button>
+              <Button variant="outline" size="icon" aria-label={data?.settings.paused ? "Lanjutkan tayangan" : "Jeda tayangan"} title={data?.settings.paused ? "Lanjutkan tayangan" : "Jeda tayangan"} disabled={!data || !!busy} onClick={() => updateSetting({ paused: !data?.settings.paused }, "paused", data?.settings.paused ? "Tayangan dilanjutkan." : "Tayangan dijeda.")}>{busy === "paused" ? <LoaderCircle className="spin" aria-hidden="true" /> : data?.settings.paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}</Button>
+            </div></div>
             <div className="event-control"><div><strong>Tema acara</strong><p>{data ? POSTER_THEMES.find(theme => theme.id === data.settings.themePolicy.defaultTheme)?.name : "Memuat pengaturan…"}</p></div>
               <Button variant="outline" size="icon" aria-label="Atur tema acara" disabled={!data || !!busy} onClick={() => { if (data) { setThemeError(""); setThemeDraft({...data.settings.themePolicy, enabled:[...data.settings.themePolicy.enabled]}); } }}><Settings2 aria-hidden="true" /></Button>
             </div>
@@ -221,6 +227,30 @@ export default function OperatorConsole() {
           </Card>
           <footer className="dashboard-footer"><span>Loka Portrait · Taka Loka Initiative</span><span>Waktu ditampilkan dalam WIB</span></footer>
         </main>
+        <Dialog open={!!displayDraft} onOpenChange={open => { if (!open && busy !== "display") setDisplayDraft(null); }}>
+          <DialogContent className="theme-settings-dialog" showCloseButton={busy !== "display"}>
+            <DialogHeader><DialogTitle>Tayangan layar</DialogTitle><DialogDescription>Atur durasi, jumlah foto, dan arah layar TV.</DialogDescription></DialogHeader>
+            {displayDraft && <form onSubmit={event => {
+              event.preventDefault();
+              const durationSeconds = Number(displayDraft.durationSeconds), replayLimit = Number(displayDraft.replayLimit);
+              if (!Number.isInteger(durationSeconds) || durationSeconds < 5 || durationSeconds > 60 || !Number.isInteger(replayLimit) || replayLimit < 1 || replayLimit > 1000) { setDisplayError("Isi durasi 5 sampai 60 detik dan jumlah 1 sampai 1000 orang."); return; }
+              setDisplayError("");
+              void mutate("display", async () => {
+                const next = await readResponse<StateResponse>(await fetch("/api/settings", {method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({durationSeconds, replayLimit, screenRotation:displayDraft.screenRotation})}));
+                if (mounted.current) { ++requestSequence.current; setData(next); setDisplayDraft(null); }
+              }, "Pengaturan tayangan diperbarui.");
+            }}>
+              <fieldset className="display-settings-fields" disabled={!!busy}>
+                <legend className="sr-only">Pengaturan tayangan</legend>
+                <div><label htmlFor="slide-duration">Durasi tiap foto (detik)</label><Input id="slide-duration" type="number" min={5} max={60} step={1} required value={displayDraft.durationSeconds} onChange={event => setDisplayDraft({...displayDraft, durationSeconds:event.target.value})} aria-describedby="slide-duration-hint" /><p id="slide-duration-hint">5 sampai 60 detik per foto.</p></div>
+                <div><label htmlFor="replay-limit">Jumlah orang dalam putaran</label><Input id="replay-limit" type="number" min={1} max={1000} step={1} required value={displayDraft.replayLimit} onChange={event => setDisplayDraft({...displayDraft, replayLimit:event.target.value})} aria-describedby="replay-limit-hint" /><p id="replay-limit-hint">Foto baru tampil dulu. Setelah itu, ulangi foto orang terbaru sesuai jumlah ini.</p></div>
+                <fieldset className="display-orientation"><legend>Arah layar TV</legend>{([{value:0,label:"Landscape",note:"Mendatar, tanpa rotasi"},{value:90,label:"Portrait kanan",note:"Tegak, putar ke kanan"},{value:270,label:"Portrait kiri",note:"Tegak, putar ke kiri"}] as const).map(option => <label key={option.value}><input type="radio" name="screenRotation" value={option.value} checked={displayDraft.screenRotation === option.value} onChange={() => setDisplayDraft({...displayDraft, screenRotation:option.value})} /><span><strong>{option.label}</strong><small>{option.note}</small></span></label>)}</fieldset>
+              </fieldset>
+              {displayError && <p className="form-error" role="alert">{displayError}</p>}
+              <DialogFooter><Button type="button" variant="outline" disabled={busy === "display"} onClick={() => setDisplayDraft(null)}>Batal</Button><Button type="submit" disabled={!!busy}>{busy === "display" ? "Menyimpan…" : "Simpan"}</Button></DialogFooter>
+            </form>}
+          </DialogContent>
+        </Dialog>
         <Dialog open={!!themeDraft} onOpenChange={open => { if (!open && busy !== "themePolicy") setThemeDraft(null); }}>
           <DialogContent className="theme-settings-dialog" showCloseButton={busy !== "themePolicy"}>
             <DialogHeader><DialogTitle>Tema acara</DialogTitle><DialogDescription>Aktifkan tema yang tersedia untuk peserta, lalu pilih tema default.</DialogDescription></DialogHeader>

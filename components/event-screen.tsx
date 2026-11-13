@@ -57,7 +57,7 @@ export default function EventScreen() {
   const [artworkError, setArtworkError] = useState("");
   const [viewportRatio, setViewportRatio] = useState(16 / 9);
   const stageRef = useRef<HTMLDivElement>(null);
-  const pageRef = useRef<HTMLElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
   const retryRef = useRef<() => void>(() => {});
   const serverClock = useRef({ server: 0, monotonic: 0 });
 
@@ -180,7 +180,8 @@ export default function EventScreen() {
   const connectionMessage = data?.settings.paused ? "Pergantian potret dijeda" : queuedCount ? `${queuedCount} potret siap tayang` : processingCount ? "Potret berikutnya sedang diproses" : "Pindai QR untuk ikut";
 
   return (
-    <main ref={pageRef} className={`nusantara-screen ${!portrait ? "is-empty" : ""} ${motionPaused ? "is-motion-paused" : ""}`}>
+    <div ref={pageRef} className="screen-viewport" data-rotation={data?.settings.screenRotation ?? 0}>
+    <main className={`nusantara-screen ${!portrait ? "is-empty" : ""} ${motionPaused ? "is-motion-paused" : ""}`}>
       <h1 className="sr-only">Prospera Nusantara — layar acara</h1>
       <div className="nusantara-stage" ref={stageRef}>
         {portrait && <ScreenArtwork name={name} image={image} theme={portrait.posterTheme} viewportRatio={viewportRatio} retry={artworkRetry} onError={setArtworkError} />}
@@ -196,5 +197,6 @@ export default function EventScreen() {
       {data?.settings.paused && !foreignLease && <div className="screen-paused" role="status"><Pause size={15} /> Pergantian potret dijeda operator</div>}
       {(error || imageError || artworkError) && <div className="screen-error" role="alert"><span>{error || imageError || artworkError}</span><a href="/operator">Login operator</a><button type="button" onClick={() => { setArtworkRetry(value => value + 1); retryRef.current(); }}><RefreshCw size={14} />Sambungkan ulang</button></div>}
     </main>
+    </div>
   );
 }

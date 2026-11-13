@@ -27,6 +27,8 @@ export interface Settings {
   accepting: boolean;
   paused: boolean;
   durationSeconds: number;
+  replayLimit: number;
+  screenRotation: 0 | 90 | 270;
 }
 
 export interface ScreenState {
@@ -39,6 +41,7 @@ export interface ScreenState {
 }
 
 export interface StateResponse {
+  nextJobId?: string | null;
   /** Server clock anchor for monotonic client countdowns. Epoch milliseconds. */
   serverNow: number;
   settings: Settings;

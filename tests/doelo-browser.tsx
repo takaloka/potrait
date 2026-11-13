@@ -5,16 +5,17 @@ import EventScreen from "../components/event-screen";
 import { renderPosterBlob } from "../lib/poster-download";
 
 let theme = "bojonegoro-doelo";
+let rotation = Number(new URLSearchParams(location.search).get("rotation") || 0);
 const job = { id: "fixture", name: "Raden Sekar", status: "displaying", resultUrl: "/samples/before.jpg", originalUrl: "", displayedAt: 1 };
 const realFetch = window.fetch.bind(window);
 window.fetch = async (input, init) => {
   if (String(input) === "/api/screen") {
     const body = init?.body ? JSON.parse(String(init.body)) : {};
-    return Response.json({ jobs: [{ ...job, posterTheme: theme }], settings: { paused: false }, screen: { currentJobId: "fixture", sessionId: body.sessionId, endsAt: Date.now() + 60000 }, serverNow: Date.now(), nextJobId: null, queueCounts: { ready: 0, processing: 0 } });
+    return Response.json({ jobs: [{ ...job, posterTheme: theme }], settings: { paused: false, screenRotation:rotation }, screen: { currentJobId: "fixture", sessionId: body.sessionId, endsAt: Date.now() + 60000 }, serverNow: Date.now(), nextJobId: null, queueCounts: { ready: 0, processing: 0 } });
   }
   return realFetch(input, init);
 };
-Object.assign(window, { setFixtureTheme: (value: string) => { theme = value; } });
+Object.assign(window, { setFixtureTheme: (value: string) => { theme = value; }, setFixtureRotation: (value: number) => { rotation = value; } });
 if (new URLSearchParams(location.search).get("view") === "print") {
   renderPosterBlob({ ...job, posterTheme: "bojonegoro-doelo" }).then(async blob => {
     const image = new Image(); image.src = URL.createObjectURL(blob); await image.decode();
