@@ -12,6 +12,16 @@ let checks = 0;
 const key = "test-key-never-sent-to-a-service";
 
 try {
+  for (const style of ["beskap", "kebaya", "jas"]) {
+    const prompt = adapter.portraitPrompt(style, "bojonegoro-doelo");
+    assert.match(prompt, /strictly neutral black.and.white/i);
+    assert.match(prompt, /no sepia, orange, brown, yellow tint/i);
+    assert.match(prompt, /neutral gray painted studio backdrop/i);
+    assert.match(prompt, /recognizable facial features/);
+    assert.doesNotMatch(prompt, /warm sepia|warm taupe|faded warm tones|natural skin tone/);
+    assert.match(adapter.portraitPrompt(style, "nusantara"), /warm sepia/);
+    checks += 6;
+  }
   for (const style of ["batik", "kebaya-kasual", "retro-festival"]) {
     const prompt = adapter.portraitPrompt(style);
     assert.match(prompt, /warm full.color/i);
