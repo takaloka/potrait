@@ -12,7 +12,9 @@ const DEMO_PROCESS_MS = 4000;
 const SAMPLE_VERSION = "prepared-fictional-sample:persibo-v2";
 const SAMPLE_RESULT_URL = "/samples/persibo-player-v2.png";
 const SLIDE_DURATION_SQL = "COALESCE(NULLIF((SELECT duration_seconds FROM photobooth_settings WHERE id = 1), 0), 10)";
-const NEXT_SLIDE_SQL = "SELECT id FROM photobooth_jobs WHERE status IN ('ready', 'done') AND result_url IS NOT NULL AND id != COALESCE((SELECT current_job_id FROM photobooth_screen WHERE id = 1), '') ORDER BY CASE WHEN status = 'ready' THEN 0 ELSE 1 END, CASE WHEN status = 'ready' THEN COALESCE(ready_at, created_at) ELSE COALESCE(completed_at, displayed_at, created_at) END, id LIMIT 1";
+// Unseen photos always get a turn. Count the current portrait in the replay
+// window, and use creation time so repeated displays never refresh membership.
+const NEXT_SLIDE_SQL = "SELECT id FROM photobooth_jobs WHERE (status = 'ready' OR (status = 'done' AND id IN (SELECT id FROM photobooth_jobs WHERE status IN ('ready', 'done', 'displaying') AND result_url IS NOT NULL ORDER BY created_at DESC, id DESC LIMIT (SELECT replay_limit FROM photobooth_settings WHERE id = 1)))) AND result_url IS NOT NULL AND id != COALESCE((SELECT current_job_id FROM photobooth_screen WHERE id = 1), '') ORDER BY CASE WHEN status = 'ready' THEN 0 ELSE 1 END, CASE WHEN status = 'ready' THEN COALESCE(ready_at, created_at) ELSE COALESCE(completed_at, displayed_at, created_at) END, id LIMIT 1";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface Environment extends AiEnvironment, CodexBackendEnvironment { DB?: D1Database; BUCKET?: R2Bucket; IMAGE_NORMALIZER?: Fetcher; EVENT_JOB_LIMIT?: string; MAX_QUEUED_JOBS?: string; UPLOADS_PER_HOUR?: string; RETENTION_DAYS?: string; ALLOW_DEMO_SAMPLES?: string }
@@ -23,7 +25,7 @@ interface JobRow {
   displayed_at: number | null; completed_at: number | null; provider_task_id: string | null;
   provider_polling_url: string | null; provider_poll_after: number | null; provider_lock: string | null; provider_lock_until: number | null;
 }
-interface SettingsRow { id: number; event_name: string; theme: string; accepting: number; paused: number; duration_seconds: number; theme_policy: string }
+interface SettingsRow { id: number; event_name: string; theme: string; accepting: number; paused: number; duration_seconds: number; theme_policy: string; replay_limit: number; screen_rotation: Settings["screenRotation"] }
 interface ScreenRow { id: number; session_id: string | null; current_job_id: string | null; started_at: number | null; ends_at: number | null; last_seen_at: number | null; pause_remaining_ms: number | null }
 
 export class ApiFailure extends Error {
@@ -84,7 +86,7 @@ function publicJob(row: JobRow): Job {
   };
 }
 function publicSettings(row: SettingsRow): Settings {
-  return { eventName: row.event_name, theme: row.theme, accepting: row.accepting === 1, paused: row.paused === 1, durationSeconds: row.duration_seconds || 10, themePolicy: JSON.parse(row.theme_policy) };
+  return { eventName: row.event_name, theme: row.theme, accepting: row.accepting === 1, paused: row.paused === 1, durationSeconds: row.duration_seconds || 10, replayLimit: row.replay_limit, screenRotation: row.screen_rotation, themePolicy: JSON.parse(row.theme_policy) };
 }
 function publicScreen(row: ScreenRow, now: number): ScreenState {
   return { connected: !!row.session_id && row.last_seen_at !== null && now - row.last_seen_at < SCREEN_LEASE_MS,
@@ -297,15 +299,16 @@ type QueueCounts = {ready:number;processing:number};
 export async function getState(advance = true, presentationOnly = false): Promise<StateResponse & {queueCounts?:QueueCounts}> {
   const db = database();
   if (advance) await prepareState(db); else await initialize(db);
-  const [settings, screen, jobs] = await Promise.all([
+  const [settings, screen, jobs, next] = await Promise.all([
     readSettings(db), readScreen(db), db.prepare(presentationOnly
       ? `SELECT * FROM photobooth_jobs WHERE id IN (SELECT current_job_id FROM photobooth_screen WHERE id=1) OR id = (${NEXT_SLIDE_SQL}) OR id = (SELECT id FROM photobooth_jobs WHERE status='done' AND displayed_at IS NOT NULL AND result_url IS NOT NULL ORDER BY displayed_at DESC LIMIT 1)`
       : "SELECT * FROM photobooth_jobs ORDER BY created_at DESC, id").all<JobRow>(),
+    db.prepare(NEXT_SLIDE_SQL).first<{ id: string }>(),
   ]);
   const config = await activeAiConfig();
   const serverNow = Date.now();
   const queueCounts = presentationOnly ? await db.prepare("SELECT COALESCE(SUM(status='ready' AND result_url IS NOT NULL),0) AS ready, COALESCE(SUM(status IN ('queued','processing')),0) AS processing FROM photobooth_jobs").first<QueueCounts>() : null;
-  return { serverNow, settings: publicSettings(settings), jobs: jobs.results.map(publicJob), mode: config.mode, aiConfigured: config.configured, screen: publicScreen(screen, serverNow), ...(queueCounts?{queueCounts}:{}) };
+  return { serverNow, nextJobId: next?.id ?? null, settings: publicSettings(settings), jobs: jobs.results.map(publicJob), mode: config.mode, aiConfigured: config.configured, screen: publicScreen(screen, serverNow), ...(queueCounts?{queueCounts}:{}) };
 }
 
 // A public display receives presentation data, not the operator's full queue.
@@ -313,9 +316,7 @@ export function screenPresentation(state: StateResponse & {queueCounts?:QueueCou
   const ready = state.jobs.filter(job => job.status === "ready" && job.resultUrl)
     .sort((a, b) => (a.readyAt ?? a.createdAt) - (b.readyAt ?? b.createdAt) || a.id.localeCompare(b.id));
   const current = state.jobs.find(job => job.id === state.screen.currentJobId && job.status === "displaying");
-  const repeat = state.jobs.filter(job => job.status === "done" && job.resultUrl && job.id !== state.screen.currentJobId)
-    .sort((a, b) => (a.completedAt ?? a.displayedAt ?? a.createdAt) - (b.completedAt ?? b.displayedAt ?? b.createdAt) || a.id.localeCompare(b.id));
-  const next = ready[0] ?? repeat[0];
+  const next = state.jobs.find(job => job.id === state.nextJobId);
   const last = state.jobs.filter(job => job.status === "done" && job.displayedAt && job.resultUrl)
     .sort((a, b) => (b.displayedAt ?? 0) - (a.displayedAt ?? 0))[0];
   const ids = new Set([current?.id, next?.id, last?.id].filter(Boolean));
@@ -517,7 +518,7 @@ export async function actOnJob(id: string, action: unknown): Promise<Job> {
 export async function updateSettings(payload: Record<string, unknown>): Promise<StateResponse> {
   // Old clients used zero for an indefinite hold. It now selects the default loop interval.
   if (payload.durationSeconds === 0) payload = { ...payload, durationSeconds: 10 };
-  const allowed = ["eventName", "theme", "accepting", "paused", "durationSeconds", "themePolicy"];
+  const allowed = ["eventName", "theme", "accepting", "paused", "durationSeconds", "themePolicy", "replayLimit", "screenRotation"];
   if (Object.keys(payload).some(k => !allowed.includes(k))) throw new ApiFailure("Ada pengaturan yang tidak dikenal.");
   const assignments: string[] = [];
   const values: (string | number)[] = [];
@@ -545,6 +546,14 @@ export async function updateSettings(payload: Record<string, unknown>): Promise<
   if ("durationSeconds" in payload) {
     if (typeof payload.durationSeconds !== "number" || !Number.isInteger(payload.durationSeconds) || payload.durationSeconds < 5 || payload.durationSeconds > 60) throw new ApiFailure("Gunakan durasi tayang 5–60 detik.");
     assignments.push("duration_seconds = ?"); values.push(payload.durationSeconds);
+  }
+  if ("replayLimit" in payload) {
+    if (typeof payload.replayLimit !== "number" || !Number.isInteger(payload.replayLimit) || payload.replayLimit < 1 || payload.replayLimit > 1000) throw new ApiFailure("Gunakan batas putaran 1–1000 orang.");
+    assignments.push("replay_limit = ?"); values.push(payload.replayLimit);
+  }
+  if ("screenRotation" in payload) {
+    if (typeof payload.screenRotation !== "number" || ![0, 90, 270].includes(payload.screenRotation)) throw new ApiFailure("Pilih orientasi layar yang tersedia.");
+    assignments.push("screen_rotation = ?"); values.push(payload.screenRotation);
   }
   if (!assignments.length) throw new ApiFailure("Tidak ada pengaturan yang diubah.");
   const db = database();

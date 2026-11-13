@@ -83,3 +83,12 @@
 .nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-join h2 { margin: 0 0 1cqw; font: 400 2cqw/1.15 Georgia, serif; letter-spacing: 0; color: #fff6e7; text-shadow: 0 1px 4px #21180f; }
 .nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-qr { width: 100%; padding: 0; border-radius: 0; }
 .nusantara-screen:has([data-theme="bojonegoro-doelo"]):fullscreen .nusantara-screen-header { display: none; }
+
+/* Fullscreen belongs to the physical viewport; the inner canvas can rotate
+   without the browser resetting its dimensions on entry to fullscreen. */
+.screen-viewport { width: 100%; min-height: 100svh; background: #252b28; }
+.screen-viewport:fullscreen .nusantara-screen:has([data-theme="bojonegoro-doelo"]) .nusantara-screen-header { display: none; }
+.screen-viewport[data-rotation="90"], .screen-viewport[data-rotation="270"] { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 0; overflow: hidden; }
+.screen-viewport:is([data-rotation="90"], [data-rotation="270"]) .nusantara-screen { position: absolute; left: 50%; top: 50%; width: 100dvh; height: 100vw; min-height: 0; padding: 0; grid-template-rows: minmax(0, 1fr); align-content: center; transform: translate(-50%, -50%) rotate(90deg); }
+.screen-viewport[data-rotation="270"] .nusantara-screen { transform: translate(-50%, -50%) rotate(-90deg); }
+.screen-viewport:is([data-rotation="90"], [data-rotation="270"]) .nusantara-stage { width: 100%; height: 100%; min-height: 0; aspect-ratio: auto; container-type: size; }

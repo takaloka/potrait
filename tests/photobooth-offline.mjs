@@ -93,7 +93,33 @@ globalThis.fetch = async (input, init) => {
 };
 
 try {
-  if (oldArgument === "theme-policy") {
+  if (oldArgument === "display-settings") {
+    const { default: assert } = await import('node:assert/strict');
+    assert.equal((await app.getState()).settings.replayLimit, 10);
+    assert.equal((await app.getState()).settings.screenRotation, 0);
+    await app.updateSettings({replayLimit: 2, screenRotation: 90, durationSeconds: 5});
+    for (const invalid of [{replayLimit:0},{replayLimit:1001},{replayLimit:1.5},{replayLimit:'10'},{screenRotation:180},{screenRotation:'90'}]) {
+      await assert.rejects(app.updateSettings({...invalid, durationSeconds:30}));
+      assert.equal((await app.getState()).settings.durationSeconds, 5);
+    }
+    const ids = Array.from({length:4}, () => crypto.randomUUID());
+    ids.forEach((id,i) => sqlite.prepare("INSERT INTO photobooth_jobs(id,request_id,fingerprint,name,status,mode,original_url,result_url,created_at,queued_at,ready_at,completed_at) VALUES(?,?,?,?,?,'demo','/sample.jpg','/result.jpg',?,?,?,?)").run(id,id,id,'Test',i===0?'ready':'done',i+1,i+1,i+1,i+1));
+    const sessionId = crypto.randomUUID();
+    let state = await app.actOnScreen({sessionId,action:'claim'});
+    assert.equal(state.screen.currentJobId,ids[0],'unseen old photo takes priority over newest repeats');
+    const advance = async () => {
+      sqlite.exec('UPDATE photobooth_screen SET ends_at=0');
+      const next = app.screenPresentation(await app.getState(false,true),sessionId);
+      return app.actOnScreen({sessionId,action:'claim',jobId:next.nextJobId});
+    };
+    const seen=[];
+    for(let i=0;i<6;i++) seen.push((await advance()).screen.currentJobId);
+    assert.deepEqual(seen,[ids[2],ids[3],ids[2],ids[3],ids[2],ids[3]],'repeat only newest two, including active participant');
+    await app.updateSettings({replayLimit:1,screenRotation:270});
+    assert.equal(app.screenPresentation(await app.getState(false,true),sessionId).nextJobId,null,'single newest portrait stays visible');
+    assert.equal((await app.getState()).jobs.length,4,'window does not delete photos');
+    console.log('PASS display settings: validation, atomic saves, FIFO priority, bounded replay and one-photo hold.');
+  } else if (oldArgument === "theme-policy") {
     const { default: assert } = await import('node:assert/strict');
     const original = (await app.getState()).settings.themePolicy;
     assert.deepEqual(original, {enabled: ['nusantara', 'kolase', 'bojonegoro-doelo'], defaultTheme: 'nusantara'});

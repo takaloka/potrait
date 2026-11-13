@@ -19,6 +19,8 @@ export const photoboothSettings = sqliteTable("photobooth_settings", {
   accepting: integer("accepting").notNull().default(1),
   paused: integer("paused").notNull().default(0),
   durationSeconds: integer("duration_seconds").notNull().default(12),
+  replayLimit: integer("replay_limit").notNull().default(10),
+  screenRotation: integer("screen_rotation").notNull().default(0),
 });
 
 export const photoboothJobs = sqliteTable("photobooth_jobs", {

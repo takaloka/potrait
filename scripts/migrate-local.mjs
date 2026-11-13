@@ -25,6 +25,7 @@ const db=new DatabaseSync(databasePath);
 const table=name=>!!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(name);
 const column=name=>db.prepare('PRAGMA table_info(photobooth_jobs)').all().some(c=>c.name===name);
 const present={
+ '0009_display_settings.sql':db.prepare('PRAGMA table_info(photobooth_settings)').all().some(c=>c.name==='screen_rotation'),
  '0008_event_theme_policy.sql':db.prepare('PRAGMA table_info(photobooth_settings)').all().some(c=>c.name==='theme_policy'),
  '0000_soft_zaladane.sql':table('photobooth_jobs'),
  '0001_operator_access.sql':table('operator_account'),
