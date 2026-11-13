@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Expand, LoaderCircle, Pause, Play, RefreshCw, Shrink } from "lucide-react";
+import { Expand, LoaderCircle, Pause, Play, Shrink } from "lucide-react";
 import type { Job, StateResponse } from "@/lib/photobooth-types";
 import { JoinQr } from "./join-qr";
 import { ScreenArtwork } from "./screen-artwork";
@@ -48,8 +48,6 @@ function getSessionId() {
 export default function EventScreen() {
   const [data, setData] = useState<ScreenResponse | null>(null);
   const [joinUrl, setJoinUrl] = useState("");
-  const [error, setError] = useState("");
-  const [imageError, setImageError] = useState("");
   const [foreignLease, setForeignLease] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [motionPaused, setMotionPaused] = useState(false);
@@ -58,7 +56,6 @@ export default function EventScreen() {
   const [viewportRatio, setViewportRatio] = useState(16 / 9);
   const stageRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
-  const retryRef = useRef<() => void>(() => {});
   const serverClock = useRef({ server: 0, monotonic: 0 });
 
   useEffect(() => {
@@ -103,7 +100,6 @@ export default function EventScreen() {
         if (stopped) return;
         ownsLease = next.screen.sessionId === sessionId;
         setForeignLease(false);
-        setError("");
         acceptState(next);
 
         const mayReplace = !next.screen.currentJobId || (next.screen.endsAt !== null && serverTime() >= next.screen.endsAt);
@@ -117,15 +113,13 @@ export default function EventScreen() {
               next = await action(sessionId, "claim", candidate.id);
               if (stopped) return;
               acceptState(next);
-              setImageError("");
             } else if (!loaded.has(url) && !loading.has(url)) {
               // Loading does not block heartbeats or remove the current portrait.
               loading.add(url);
               void preloadImage(url).then(() => {
                 loaded.add(url);
-                if (!stopped) setImageError("");
               }).catch(() => {
-                if (!stopped) setImageError("Potret berikutnya belum termuat. Potret ini tetap tampil sementara kami mencoba lagi.");
+                // Keep the current portrait; the next cycle retries silently.
               }).finally(() => loading.delete(url));
             }
           }
@@ -135,10 +129,6 @@ export default function EventScreen() {
         if (reason instanceof ScreenError && reason.code === "SCREEN_BUSY") {
           ownsLease = false;
           setForeignLease(true);
-          setError("");
-          setImageError("");
-        } else {
-          setError(reason instanceof Error ? reason.message : "Koneksi layar terputus. Menyambungkan kembali…");
         }
         // Public presentation remains readable even when this device cannot
         // control the lease (including an expired operator session).
@@ -151,10 +141,15 @@ export default function EventScreen() {
         if (!stopped) timer = setTimeout(cycle, 1000);
       }
     }
-    retryRef.current = () => { clearTimeout(timer); void cycle(); };
     void cycle();
-    return () => { stopped = true; clearTimeout(timer); retryRef.current = () => {}; window.removeEventListener("pagehide", release); release(); };
+    return () => { stopped = true; clearTimeout(timer); window.removeEventListener("pagehide", release); release(); };
   }, []);
+
+  useEffect(() => {
+    if (!artworkError) return;
+    const timer = setTimeout(() => setArtworkRetry(value => value + 1), 5000);
+    return () => clearTimeout(timer);
+  }, [artworkError, artworkRetry]);
 
   useEffect(() => {
     const onFullscreen = () => setFullscreen(!!document.fullscreenElement);
@@ -166,7 +161,7 @@ export default function EventScreen() {
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
       else await pageRef.current?.requestFullscreen();
-    } catch { setError("Layar penuh belum didukung di jendela ini. Gunakan mode layar penuh browser."); }
+    } catch { /* Keep the presentation visible when fullscreen is unavailable. */ }
   }
 
   const active = data?.screen.currentJobId ? data.jobs.find(job => job.id === data.screen.currentJobId && job.status === "displaying") : undefined;
@@ -194,7 +189,6 @@ export default function EventScreen() {
       </div>
 
       {data?.settings.paused && !foreignLease && <div className="screen-paused" role="status"><Pause size={15} /> Pergantian potret dijeda operator</div>}
-      {(error || imageError || artworkError) && <div className="screen-error" role="alert"><span>{error || imageError || artworkError}</span><a href="/operator">Login operator</a><button type="button" onClick={() => { setArtworkRetry(value => value + 1); retryRef.current(); }}><RefreshCw size={14} />Sambungkan ulang</button></div>}
     </main>
     </div>
   );
